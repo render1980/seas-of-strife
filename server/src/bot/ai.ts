@@ -1,5 +1,5 @@
 import { getSuitFromCard } from "../game/cards";
-import { getValidCards } from "../game/rules";
+import { getValidCards } from "../game/trick";
 import type { GameState } from "../types";
 
 /**

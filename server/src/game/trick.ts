@@ -1,5 +1,5 @@
 import { getSuitFromCard, isHighestCardOfSuit } from "./cards";
-import type { PlayedCard, TrickResult, TrickState } from "../types";
+import type { GameState, PlayedCard, PlayerState, TrickResult, TrickState, ValidationResult } from "../types";
 
 /**
  * Builds a blank trick state for the start of a trick.
@@ -70,4 +70,72 @@ export function calculateTrickWinner(
     winningCard: winner.card,
     hasSpecialPower: isHighestCardOfSuit(winner.card),
   };
+}
+
+// ---------------------------------------------------------------------------
+// Internal helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Determines the set of valid cards for a player who is NOT the first to play.
+ *
+ * Rule: must follow the suit(s) present in the trick when possible.
+ * Once a second suit enters the trick (because someone had no matching cards),
+ * subsequent players must follow either the leading suit OR the new suit.
+ */
+export function getFollowSuitCards(player: PlayerState, state: GameState): number[] {
+  const { playedCards } = state.currentTrick;
+
+  // Collect the suits that are "in play" in this trick
+  const suitsInTrick = new Set(playedCards.map((pc) => getSuitFromCard(pc.card)));
+
+  // Cards in the player's hand that match any suit in the trick
+  const matchingCards = player.hand.filter((c) =>
+    suitsInTrick.has(getSuitFromCard(c))
+  );
+
+  // If the player can follow any trick suit they must
+  return matchingCards.length > 0 ? matchingCards : [...player.hand];
+}
+
+/**
+ * Returns all cards from the player's hand that are valid to play
+ * given the current trick state.
+ */
+export function getValidCards(playerId: string, state: GameState): number[] {
+  const player = state.players.find((p) => p.id === playerId);
+  if (!player) return [];
+
+  // First card of trick — any card is valid
+  if (state.currentTrick.playedCards.length === 0) {
+    return [...player.hand];
+  }
+
+  return getFollowSuitCards(player, state);
+}
+
+/**
+ * Validates whether a specific card play is legal.
+ */
+export function validateCardPlay(
+  playerId: string,
+  card: number,
+  state: GameState
+): ValidationResult {
+  // Check it is this player's turn
+  const currentPlayer = state.players[state.currentPlayerIndex];
+  if (!currentPlayer || currentPlayer.id !== playerId) {
+    return { valid: false, reason: "It is not your turn" };
+  }
+
+  // Check card is playable
+  const validCards = getValidCards(playerId, state);
+  if (!validCards.includes(card)) {
+    return {
+      valid: false,
+      reason: "Card is not valid to play",
+    };
+  }
+
+  return { valid: true };
 }
