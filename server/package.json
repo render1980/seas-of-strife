@@ -3,6 +3,10 @@
   "module": "index.ts",
   "type": "module",
   "private": true,
+  "scripts": {
+    "init-db": "bun run scripts/init-db.ts",
+    "dev": "bun --watch index.ts"
+  },
   "dependencies": {
     "postgres": "^3.4"
   },
