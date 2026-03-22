@@ -19,19 +19,39 @@ import {
 } from "./trick";
 
 /**
+ * Interface for persistence service.
+ * Allows GameEngine to work with or without database backing.
+ */
+export interface IPersistService {
+  saveGameState(state: GameState): Promise<void>;
+  saveRoundResult(
+    gameId: number,
+    roundNumber: number,
+    roundResult: any
+  ): Promise<void>;
+  saveGameResults(
+    gameId: number,
+    realPlayerIds: string[],
+    winners: any[]
+  ): Promise<void>;
+}
+
+/**
  * This file contains the main GameEngine class which manages the overall game state and lifecycle.
  * It uses a GameStateMachine to handle phase transitions and enforce valid state changes.
  * The engine exposes methods for starting the game, processing player moves, and retrieving game results.
  * It orchestrates the flow of the game by calling into the round and trick logic as needed.
  * The GameState is the single source of truth for the current game status, and all methods ensure it is updated immutably.
- * The engine does not handle any I/O or networking concerns; it purely manages game logic and state.
+ * The engine supports optional persistence via IPersistService.
  */
 
 export class GameEngine {
   private sm: GameStateMachine;
+  private persistService?: IPersistService;
 
-  constructor(initialState: GameState) {
+  constructor(initialState: GameState, persistService?: IPersistService) {
     this.sm = new GameStateMachine(initialState);
+    this.persistService = persistService;
   }
 
   // ---------------------------------------------------------------------------
@@ -48,6 +68,22 @@ export class GameEngine {
 
   getValidMoves(playerId: string): number[] {
     return getValidCards(playerId, this.sm.getState());
+  }
+
+  // ---------------------------------------------------------------------------
+  // Private persistence helper
+  // ---------------------------------------------------------------------------
+
+  private async persistState(): Promise<void> {
+    if (!this.persistService) return;
+
+    try {
+      const state = this.sm.getState();
+      await this.persistService.saveGameState(state);
+    } catch (error) {
+      console.error("Failed to persist game state:", error);
+      // Don't throw — game should continue even if persistence fails
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -92,6 +128,8 @@ export class GameEngine {
     this.sm.setState(newState);
     this.sm.transition("trick-playing");
 
+    this.persistState(); // Fire and forget
+
     return { success: true, newState: this.sm.getState() };
   }
 
@@ -102,8 +140,9 @@ export class GameEngine {
   /**
    * Processes a card play from a player.
    * Handles the full cascade: validate → apply → resolve trick → advance round/game.
+   * Persists state after each move.
    */
-  playCard(playerId: string, card: number): MoveResult {
+  async playCard(playerId: string, card: number): Promise<MoveResult> {
     if (this.sm.getPhase() !== "trick-playing") {
       return {
         success: false,
@@ -122,18 +161,20 @@ export class GameEngine {
     // Apply card to state
     let newState = this.applyCardToState(state, playerId, card);
     this.sm.setState(newState);
+    await this.persistState();
 
     // Check if the trick is complete
     if (newState.currentTrick.playedCards.length < newState.players.length) {
       // Advance to next player clockwise
       newState = this.advanceCurrentPlayer(newState);
       this.sm.setState(newState);
+      await this.persistState();
       return { success: true, newState: this.sm.getState() };
     }
 
     // Trick is complete — resolve it
     this.sm.transition("trick-resolution");
-    const roundEnded = this.resolveTrick();
+    const roundEnded = await this.resolveTrick();
 
     if (roundEnded) {
       return {
@@ -197,7 +238,7 @@ export class GameEngine {
    * Resolves the completed trick, updates scores, and advances the phase.
    * Returns true if the round ended.
    */
-  private resolveTrick(): boolean {
+  private async resolveTrick(): Promise<boolean> {
     const state = this.sm.getState();
     const { players, currentTrick, currentRound, roundResults } = state;
 
@@ -226,6 +267,7 @@ export class GameEngine {
       lastTrickWinnerIndex: trickResult.trickTakerIdx,
     };
     this.sm.setState(newState);
+    await this.persistState();
 
     // Round ends when all players have played all cards
     const roundOver = updatedPlayers.every((p) => p.hand.length === 0);
@@ -239,6 +281,7 @@ export class GameEngine {
           currentPlayerIndex: trickResult.trickTakerIdx,
         };
         this.sm.setState(newState);
+        await this.persistState();
         // Stay in trick-resolution until leader is chosen
         return false;
       }
@@ -253,10 +296,11 @@ export class GameEngine {
       };
       this.sm.setState(newState);
       this.sm.transition("trick-playing");
+      await this.persistState();
       return false;
     }
 
-    // Round is over
+    // Round is over — save round results
     const roundResult = calculateRoundScores(currentRound, updatedPlayers);
     newState = {
       ...this.sm.getState(),
@@ -265,19 +309,55 @@ export class GameEngine {
     };
     this.sm.setState(newState);
     this.sm.transition("round-end");
+    await this.persistState();
+
+    // Save round results to database
+    if (this.persistService) {
+      try {
+        await this.persistService.saveRoundResult(
+          newState.gameId,
+          currentRound,
+          roundResult
+        );
+      } catch (error) {
+        console.error("Failed to save round result:", error);
+      }
+    }
 
     if (currentRound >= TOTAL_ROUNDS_PER_GAME) {
       this.sm.transition("game-end");
+      await this.persistState();
+
+      // Save game results
+      if (this.persistService) {
+        const realPlayerIds = newState.players
+          .filter((p) => !p.isBot)
+          .map((p) => p.id);
+        const winners = determineRoundWinners(
+          newState.players,
+          newState.roundResults
+        );
+        try {
+          await this.persistService.saveGameResults(
+            newState.gameId,
+            realPlayerIds,
+            winners
+          );
+        } catch (error) {
+          console.error("Failed to save game results:", error);
+        }
+      }
+
       return true;
     }
 
     // Start the next round
     this.sm.transition("round-start");
-    this.applyRoundStart();
+    await this.applyRoundStart();
     return true;
   }
 
-  private applyRoundStart(): void {
+  private async applyRoundStart(): Promise<void> {
     const state = this.sm.getState();
     const { updatedPlayers, startingPlayerIndex } = dealCards(state.players);
 
@@ -292,6 +372,27 @@ export class GameEngine {
     };
     this.sm.setState(newState);
     this.sm.transition("trick-playing");
+    await this.persistState();
+  }
+
+  /**
+   * Auto-play a random valid card for a player who timed out (30s disconnect).
+   * Called by ConnectionManager when disconnect timeout occurs.
+   */
+  async autoPlayCard(playerId: string): Promise<MoveResult> {
+    const validCards = this.getValidMoves(playerId);
+
+    if (validCards.length === 0) {
+      return {
+        success: false,
+        error: "No valid cards available for auto-play",
+      };
+    }
+
+    // Pick a random card
+    const randomCard = validCards[Math.floor(Math.random() * validCards.length)];
+
+    return this.playCard(playerId, randomCard);
   }
 }
 

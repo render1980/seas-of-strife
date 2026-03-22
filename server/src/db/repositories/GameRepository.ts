@@ -1,0 +1,222 @@
+import { getDb } from "../connection";
+import type { GameState, RoundResult } from "../../types";
+
+/**
+ * GameRepository handles all persistence for game state and results.
+ */
+export class GameRepository {
+  /**
+   * Save or update the complete game state.
+   * Called after every trick.
+   */
+  async saveGameState(gameState: GameState): Promise<void> {
+    const sql = getDb();
+    
+    await sql`
+      INSERT INTO games (game_id, game_state, phase, current_round)
+      VALUES (${gameState.gameId}, ${JSON.stringify(gameState)}, ${gameState.phase}, ${gameState.currentRound})
+      ON CONFLICT (game_id) 
+      DO UPDATE SET 
+        game_state = EXCLUDED.game_state,
+        phase = EXCLUDED.phase,
+        current_round = EXCLUDED.current_round,
+        updated_at = CURRENT_TIMESTAMP
+    `;
+  }
+
+  /**
+   * Load the complete game state by gameId.
+   * Returns null if game not found.
+   */
+  async loadGameState(gameId: number): Promise<GameState | null> {
+    const sql = getDb();
+    
+    const result = await sql<[{ game_state: string }]>`
+      SELECT game_state FROM games WHERE game_id = ${gameId}
+    `;
+
+    if (result.length === 0) {
+      return null;
+    }
+
+    return JSON.parse(result[0].game_state);
+  }
+
+  /**
+   * Save the results for a completed round.
+   */
+  async saveRoundResult(
+    gameId: number,
+    roundNumber: number,
+    roundResult: RoundResult
+  ): Promise<void> {
+    const sql = getDb();
+
+    // Get the internal game ID from games table
+    const gameRecord = await sql<[{ id: number }]>`
+      SELECT id FROM games WHERE game_id = ${gameId}
+    `;
+
+    if (gameRecord.length === 0) {
+      throw new Error(`Game ${gameId} not found`);
+    }
+
+    const internalGameId = gameRecord[0].id;
+
+    await sql`
+      INSERT INTO game_rounds (game_id, round_number, player_scores)
+      VALUES (${internalGameId}, ${roundNumber}, ${JSON.stringify(roundResult.scores)})
+    `;
+  }
+
+  /**
+   * Save the final game results (only real players).
+   * Also updates player profiles with medals.
+   */
+  async saveGameResults(
+    gameId: number,
+    realPlayerIds: string[],
+    winners: Array<{
+      playerId: string;
+      name: string;
+      totalTricksTaken: number;
+    }>
+  ): Promise<void> {
+    const sql = getDb();
+
+    // Get the internal game ID
+    const gameRecord = await sql<[{ id: number }]>`
+      SELECT id FROM games WHERE game_id = ${gameId}
+    `;
+
+    if (gameRecord.length === 0) {
+      throw new Error(`Game ${gameId} not found`);
+    }
+
+    const internalGameId = gameRecord[0].id;
+
+    // Save game results
+    await sql`
+      INSERT INTO game_results (game_id, real_player_ids, winners)
+      VALUES (${internalGameId}, ${JSON.stringify(realPlayerIds)}, ${JSON.stringify(winners)})
+    `;
+
+    // Update player profiles with medals
+    const medals = ["gold", "silver", "bronze"];
+    for (let i = 0; i < winners.length; i++) {
+      const winner = winners[i];
+      const medal = medals[i] || null;
+
+      if (medal) {
+        // Get user ID from login
+        const userRecord = await sql<[{ id: number }]>`
+          SELECT id FROM users WHERE login = ${winner.playerId}
+        `;
+
+        if (userRecord.length > 0) {
+          const userId = userRecord[0].id;
+          const medalColumn = `${medal}_medals`;
+
+          // Update medal count and game count
+          await sql`
+            UPDATE player_profiles
+            SET 
+              ${sql(medalColumn)} = ${sql(medalColumn)} + 1,
+              total_games_played = total_games_played + 1,
+              updated_at = CURRENT_TIMESTAMP
+            WHERE user_id = ${userId}
+          `;
+
+          // Insert into player_game_results
+          await sql`
+            INSERT INTO player_game_results (user_id, game_id, medal, total_tricks_taken)
+            VALUES (${userId}, ${gameId}, ${medal}, ${winner.totalTricksTaken})
+          `;
+        }
+      }
+    }
+
+    // Update game count for non-medal players
+    for (const realPlayerId of realPlayerIds) {
+      const isWinner = winners.some((w) => w.playerId === realPlayerId);
+      if (!isWinner) {
+        const userRecord = await sql<[{ id: number }]>`
+          SELECT id FROM users WHERE login = ${realPlayerId}
+        `;
+
+        if (userRecord.length > 0) {
+          const userId = userRecord[0].id;
+          await sql`
+            UPDATE player_profiles
+            SET total_games_played = total_games_played + 1
+            WHERE user_id = ${userId}
+          `;
+
+          // Find their trick count from roundResults
+          const gameState = await this.loadGameState(gameId);
+          if (gameState) {
+            const totalTricks = gameState.roundResults.reduce((sum, round) => {
+              const score = round.scores.find((s) => s.playerId === realPlayerId);
+              return sum + (score?.tricksTaken ?? 0);
+            }, 0);
+
+            await sql`
+              INSERT INTO player_game_results (user_id, game_id, medal, total_tricks_taken)
+              VALUES (${userId}, ${gameId}, NULL, ${totalTricks})
+            `;
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Delete a game (after archiving if needed).
+   */
+  async deleteGame(gameId: number): Promise<void> {
+    const sql = getDb();
+    await sql`
+      DELETE FROM games WHERE game_id = ${gameId}
+    `;
+  }
+
+  /**
+   * Get all games for a user (for their profile).
+   */
+  async getUserGameResults(
+    userId: number
+  ): Promise<
+    Array<{
+      gameId: number;
+      medal: string | null;
+      totalTricksTaken: number;
+      createdAt: string;
+    }>
+  > {
+    const sql = getDb();
+
+    const results = await sql<
+      Array<{
+        game_id: number;
+        medal: string | null;
+        total_tricks_taken: number;
+        created_at: string;
+      }>
+    >`
+      SELECT game_id, medal, total_tricks_taken, created_at
+      FROM player_game_results
+      WHERE user_id = ${userId}
+      ORDER BY created_at DESC
+    `;
+
+    return results.map((r) => ({
+      gameId: r.game_id,
+      medal: r.medal,
+      totalTricksTaken: r.total_tricks_taken,
+      createdAt: r.created_at,
+    }));
+  }
+}
+
+// Singleton instance
+export const gameRepository = new GameRepository();
