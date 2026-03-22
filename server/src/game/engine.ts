@@ -4,7 +4,7 @@ import { calculateTrickWinner, createEmptyTrick } from "./trick";
 import {
   dealCards,
   calculateRoundScores,
-  determineGameWinners,
+  determineRoundWinners,
 } from "./round";
 import {
   type GameState,
@@ -130,7 +130,7 @@ export class GameEngine {
 
   getGameWinners(): GameWinner[] {
     const state = this.sm.getState();
-    return determineGameWinners(state.players, state.roundResults);
+    return determineRoundWinners(state.players, state.roundResults);
   }
 
   // ---------------------------------------------------------------------------

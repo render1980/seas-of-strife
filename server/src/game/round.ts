@@ -49,13 +49,19 @@ export function calculateRoundScores(
 }
 
 /**
- * Determines the game winner(s) after all rounds complete.
- * Winner(s) are player(s) with the fewest total tricks taken.
- * Tie is possible — all tied players win.
+ * Determines current winners ranked by tricks taken.
+ * Works after any round (partial or complete) to show current leaders.
+ * Can be called after each round for leaderboard updates,
+ * or after the final round for the podium (top 3).
+ * 
+ * @param players - All players in the game
+ * @param roundResults - Round results available so far
+ * @param topN - Number of top players to return (default: 3 for medals)
  */
-export function determineGameWinners(
+export function determineRoundWinners(
   players: PlayerState[],
-  roundResults: RoundResult[]
+  roundResults: RoundResult[],
+  topN: number = 3
 ): { playerId: string; name: string; totalTricksTaken: number }[] {
   const totals = players.map((p) => {
     const totalTricksTaken = roundResults.reduce((sum, round) => {
@@ -65,6 +71,9 @@ export function determineGameWinners(
     return { playerId: p.id, name: p.name, totalTricksTaken };
   });
 
-  const minTricksTaken = Math.min(...totals.map((t) => t.totalTricksTaken));
-  return totals.filter((t) => t.totalTricksTaken === minTricksTaken);
+  // Sort by tricks taken (ascending — fewest is best)
+  totals.sort((a, b) => a.totalTricksTaken - b.totalTricksTaken);
+
+  // Return top N
+  return totals.slice(0, topN);
 }

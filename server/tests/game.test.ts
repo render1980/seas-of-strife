@@ -320,7 +320,7 @@ describe("GameEngine", () => {
     };
     const engine = new GameEngine(state);
     const winners = engine.getGameWinners();
-    expect(winners.length).toBe(1);
+    expect(winners.length).toBe(3);
     expect(winners[0].playerId).toBe("player-0");
   });
 });
