@@ -280,9 +280,6 @@ export class GameEngine {
   private applyRoundStart(): void {
     const state = this.sm.getState();
     const { updatedPlayers, startingPlayerIndex } = dealCards(state.players);
-    const nextRound =
-      state.currentRound +
-      (state.phase === "round-start" && state.currentRound > 0 ? 1 : 0);
 
     const newState: GameState = {
       ...state,
