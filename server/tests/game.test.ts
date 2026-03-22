@@ -4,7 +4,7 @@ import { getSuitFromCard, isHighestCardOfSuit, ALL_CARDS } from "../src/game/car
 import { validateCardPlay, getValidCards } from "../src/game/rules";
 import { dealCards } from "../src/game/round";
 import { BotPlayer } from "../src/bot/ai";
-import { type GameState, type PlayerState, type PlayedCard, TOTAL_ROUNDS_PER_GAME } from "../src/types/game";
+import { type GameState, type PlayerState, type PlayedCard, TOTAL_ROUNDS_PER_GAME } from "../src/types";
 
 // ---------------------------------------------------------------------------
 // Helpers

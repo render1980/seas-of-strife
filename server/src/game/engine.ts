@@ -12,7 +12,7 @@ import {
   type PlayerState,
   type GameWinner,
   TOTAL_ROUNDS_PER_GAME,
-} from "../types/game";
+} from "../types";
 
 export class GameEngine {
   private sm: GameStateMachine;

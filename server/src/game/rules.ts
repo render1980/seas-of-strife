@@ -1,5 +1,5 @@
 import { getSuitFromCard } from "./cards";
-import type { GameState, PlayerState, ValidationResult } from "../types/game";
+import type { GameState, PlayerState, ValidationResult } from "../types";
 
 /**
  * Returns all cards from the player's hand that are valid to play

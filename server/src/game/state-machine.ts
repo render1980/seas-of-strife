@@ -1,4 +1,4 @@
-import type { GamePhase, GameState } from "../types/game";
+import type { GamePhase, GameState } from "../types";
 
 /** Valid phase transitions */
 const VALID_TRANSITIONS: Record<GamePhase, GamePhase[]> = {

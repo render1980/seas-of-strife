@@ -1,5 +1,5 @@
 import { createShuffledDeck } from "./cards";
-import { DECK_LENGTH, MIN_PLAYERS, MAX_PLAYERS, type GameState, type PlayerState, type RoundResult, type TrickState } from "../types/game";
+import { DECK_LENGTH, MIN_PLAYERS, MAX_PLAYERS, type GameState, type PlayerState, type RoundResult, type TrickState } from "../types";
 
 /**
  * Deals cards to all players for a new round.

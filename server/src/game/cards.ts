@@ -1,4 +1,4 @@
-import { type Color, SUIT_DEFINITIONS, DECK_LENGTH  } from "../types/game";
+import { type Color, SUIT_DEFINITIONS, DECK_LENGTH  } from "../types";
 
 /** All 60 card values in order */
 export const ALL_CARDS: number[] = SUIT_DEFINITIONS.flatMap(({ min, max }) => {

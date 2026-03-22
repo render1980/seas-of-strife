@@ -1,5 +1,5 @@
 import { getSuitFromCard, isHighestCardOfSuit } from "./cards";
-import type { PlayedCard, TrickResult, TrickState } from "../types/game";
+import type { PlayedCard, TrickResult, TrickState } from "../types";
 
 /**
  * Builds a blank trick state for the start of a trick.
