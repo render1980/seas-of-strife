@@ -25,6 +25,9 @@ export interface Suit {
 }
 
 export const DECK_LENGTH = 60;
+export const TOTAL_ROUNDS_PER_GAME = 5;
+export const MIN_PLAYERS = 4;
+export const MAX_PLAYERS = 6;
 
 export const SUIT_DEFINITIONS: Suit[] = [
   { color: "orange", min: 0, max: 10, theme: "doldrums" },
@@ -60,7 +63,7 @@ export interface TrickState {
 
 export interface RoundResult {
   round: number;
-  scores: { playerId: string; tricksWon: number }[];
+  scores: { playerId: string; tricksTaken: number }[];
 }
 
 export interface PlayerState {
@@ -68,7 +71,7 @@ export interface PlayerState {
   name: string;
   isBot: boolean;
   hand: number[];
-  tricksWon: number;
+  tricksTaken: number;
 }
 
 export interface GameState {
@@ -112,5 +115,5 @@ export interface TrickResult {
 export interface GameWinner {
   playerId: string;
   name: string;
-  totalTricks: number;
+  totalTricksTaken: number;
 }

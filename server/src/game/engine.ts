@@ -1,18 +1,17 @@
 import { GameStateMachine } from "./state-machine";
 import { validateCardPlay, getValidCards } from "./rules";
-import { calculateTrickWinner } from "./trick";
+import { calculateTrickWinner, createEmptyTrick } from "./trick";
 import {
   dealCards,
-  createEmptyTrick,
   calculateRoundScores,
   determineGameWinners,
-  TOTAL_ROUNDS,
 } from "./round";
-import type {
-  GameState,
-  MoveResult,
-  PlayerState,
-  GameWinner,
+import {
+  type GameState,
+  type MoveResult,
+  type PlayerState,
+  type GameWinner,
+  TOTAL_ROUNDS_PER_GAME,
 } from "../types/game";
 
 export class GameEngine {
@@ -172,9 +171,9 @@ export class GameEngine {
       players.map((p) => p.id)
     );
 
-    // Update tricksWon for the winner
+    // Update tricksTaken for the winner
     const updatedPlayers: PlayerState[] = players.map((p, i) =>
-      i === trickResult.winnerIdx ? { ...p, tricksWon: p.tricksWon + 1 } : p
+      i === trickResult.winnerIdx ? { ...p, tricksTaken: p.tricksTaken + 1 } : p
     );
 
     const updatedTrick = {
@@ -230,7 +229,7 @@ export class GameEngine {
     this.sm.setState(newState);
     this.sm.transition("round-end");
 
-    if (currentRound >= TOTAL_ROUNDS) {
+    if (currentRound >= TOTAL_ROUNDS_PER_GAME) {
       this.sm.transition("game-end");
       return true;
     }

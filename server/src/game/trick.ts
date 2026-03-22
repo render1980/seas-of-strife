@@ -1,5 +1,17 @@
 import { getSuitFromCard, isHighestCardOfSuit } from "./cards";
-import type { PlayedCard, TrickResult } from "../types/game";
+import type { PlayedCard, TrickResult, TrickState } from "../types/game";
+
+/**
+ * Builds a blank trick state for the start of a trick.
+ */
+export function createEmptyTrick(startingPlayerIndex: number): TrickState {
+  return {
+    playedCards: [],
+    startingPlayerIndex,
+    winnerIndex: undefined,
+    winnerHasSpecialPower: undefined,
+  };
+}
 
 /**
  * Resolves who wins a completed trick.

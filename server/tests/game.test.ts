@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach } from "bun:test";
 import { GameEngine, createInitialGameState } from "../src/game/engine";
-import { getSuitFromCard, isHighestCardOfSuit, ALL_CARDS, SUIT_DEFINITIONS } from "../src/game/cards";
+import { getSuitFromCard, isHighestCardOfSuit, ALL_CARDS } from "../src/game/cards";
 import { validateCardPlay, getValidCards } from "../src/game/rules";
-import { dealCards, TOTAL_ROUNDS } from "../src/game/round";
+import { dealCards } from "../src/game/round";
 import { BotPlayer } from "../src/bot/ai";
-import type { GameState, PlayerState, PlayedCard } from "../src/types/game";
+import { type GameState, type PlayerState, type PlayedCard, TOTAL_ROUNDS_PER_GAME } from "../src/types/game";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -16,7 +16,7 @@ function makePlayers(count: number): PlayerState[] {
     name: `Player ${i}`,
     isBot: false,
     hand: [],
-    tricksWon: 0,
+    tricksTaken: 0,
   }));
 }
 
@@ -109,6 +109,7 @@ describe("dealCards", () => {
 
   it("throws for unsupported player counts", () => {
     expect(() => dealCards(makePlayers(3))).toThrow();
+    expect(() => dealCards(makePlayers(7))).toThrow();
   });
 });
 
@@ -122,8 +123,8 @@ describe("validateCardPlay", () => {
       gameId: 1,
       phase: "trick-playing",
       players: [
-        { id: "p0", name: "P0", isBot: false, hand: hand0, tricksWon: 0 },
-        { id: "p1", name: "P1", isBot: false, hand: [12, 13], tricksWon: 0 },
+        { id: "p0", name: "P0", isBot: false, hand: hand0, tricksTaken: 0 },
+        { id: "p1", name: "P1", isBot: false, hand: [12, 13], tricksTaken: 0 },
       ],
       currentRound: 1,
       currentPlayerIndex: 0,
@@ -185,7 +186,7 @@ describe("getValidCards", () => {
       gameId: 1,
       phase: "trick-playing",
       players: [
-        { id: "p0", name: "P0", isBot: false, hand: [0, 11, 21], tricksWon: 0 },
+        { id: "p0", name: "P0", isBot: false, hand: [0, 11, 21], tricksTaken: 0 },
       ],
       currentRound: 1,
       currentPlayerIndex: 0,
@@ -253,13 +254,13 @@ describe("GameEngine", () => {
 
     // After 4 cards played, trick should be resolved
     const endState = engine.getGameState();
-    const totalTricksWon = endState.players.reduce((s, p) => s + p.tricksWon, 0);
+    const totalTricksTaken = endState.players.reduce((s, p) => s + p.tricksTaken, 0);
     
     // Either we're in trick-playing (next trick) or round-end / awaiting leader selection
     const validPhases = ["trick-playing", "trick-resolution", "round-end", "game-end"];
     expect(validPhases).toContain(endState.phase);
     // Exactly one trick has been taken
-    expect(totalTricksWon).toBe(1);
+    expect(totalTricksTaken).toBe(1);
   });
 
   it("plays a full round for 4 players (15 tricks)", () => {
@@ -293,27 +294,27 @@ describe("GameEngine", () => {
     // After one round the round counter should advance (or game-end for single round)
     const phase = engine.getPhase();
     expect(["trick-playing", "round-end", "game-end"]).toContain(phase);
-    const totalTricksWon = engine.getGameState().players.reduce((s, p) => s + p.tricksWon, 0);
+    const totalTricksTaken = engine.getGameState().players.reduce((s, p) => s + p.tricksTaken, 0);
     // After round 1 we expect either 15 current tricks or 0 (if round advanced)
-    expect(totalTricksWon).toBeGreaterThanOrEqual(0);
+    expect(totalTricksTaken).toBeGreaterThanOrEqual(0);
   });
 
   it("returns game winners at game end", () => {
     // Use makePlayers(4) and fake a completed game state
     const players: PlayerState[] = makePlayers(4).map((p, i) => ({
       ...p,
-      tricksWon: i, // player-0 has 0 tricks (winner)
+      tricksTaken: i, // player-0 has 0 tricks (winner)
     }));
     const state: GameState = {
       gameId: 99,
       phase: "game-end",
       players,
-      currentRound: TOTAL_ROUNDS,
+      currentRound: TOTAL_ROUNDS_PER_GAME,
       currentPlayerIndex: 0,
       currentTrick: { playedCards: [], startingPlayerIndex: 0 },
       roundResults: players.map((_, i) => ({
         round: i + 1,
-        scores: players.map((p, pi) => ({ playerId: p.id, tricksWon: pi })),
+        scores: players.map((p, pi) => ({ playerId: p.id, tricksTaken: pi })),
       })),
       awaitingLeaderSelection: false,
     };
@@ -334,7 +335,7 @@ describe("BotPlayer", () => {
       gameId: 1,
       phase: "trick-playing",
       players: [
-        { id: "bot-0", name: "Bot", isBot: true, hand, tricksWon: 0 },
+        { id: "bot-0", name: "Bot", isBot: true, hand, tricksTaken: 0 },
       ],
       currentRound: 1,
       currentPlayerIndex: 0,
