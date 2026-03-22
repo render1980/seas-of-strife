@@ -1,6 +1,6 @@
 import {
   type GameState,
-  type GameWinner,
+  type RoundWinner,
   type MoveResult,
   type PlayerState,
   TOTAL_ROUNDS_PER_GAME,
@@ -11,7 +11,21 @@ import {
   determineRoundWinners,
 } from "./round";
 import { GameStateMachine } from "./state-machine";
-import { calculateTrickWinner, createEmptyTrick, getValidCards, validateCardPlay } from "./trick";
+import {
+  calculateTrickWinner,
+  createEmptyTrick,
+  getValidCards,
+  validateCardPlay,
+} from "./trick";
+
+/**
+ * This file contains the main GameEngine class which manages the overall game state and lifecycle.
+ * It uses a GameStateMachine to handle phase transitions and enforce valid state changes.
+ * The engine exposes methods for starting the game, processing player moves, and retrieving game results.
+ * It orchestrates the flow of the game by calling into the round and trick logic as needed.
+ * The GameState is the single source of truth for the current game status, and all methods ensure it is updated immutably.
+ * The engine does not handle any I/O or networking concerns; it purely manages game logic and state.
+ */
 
 export class GameEngine {
   private sm: GameStateMachine;
@@ -63,7 +77,10 @@ export class GameEngine {
 
     const currentPlayer = state.players[state.currentPlayerIndex];
     if (currentPlayer.id !== chooserId) {
-      return { success: false, error: "You do not have the special power right now" };
+      return {
+        success: false,
+        error: "You do not have the special power right now",
+      };
     }
 
     const newState: GameState = {
@@ -88,7 +105,10 @@ export class GameEngine {
    */
   playCard(playerId: string, card: number): MoveResult {
     if (this.sm.getPhase() !== "trick-playing") {
-      return { success: false, error: `Cannot play a card during phase: ${this.sm.getPhase()}` };
+      return {
+        success: false,
+        error: `Cannot play a card during phase: ${this.sm.getPhase()}`,
+      };
     }
 
     const state = this.sm.getState();
@@ -116,18 +136,28 @@ export class GameEngine {
     const roundEnded = this.resolveTrick();
 
     if (roundEnded) {
-      return { success: true, newState: this.sm.getState(), trickResolved: true, roundEnded: true };
+      return {
+        success: true,
+        newState: this.sm.getState(),
+        trickResolved: true,
+        roundEnded: true,
+      };
     }
 
     const gameEnded = this.sm.getPhase() === "game-end";
-    return { success: true, newState: this.sm.getState(), trickResolved: true, gameEnded };
+    return {
+      success: true,
+      newState: this.sm.getState(),
+      trickResolved: true,
+      gameEnded,
+    };
   }
 
   // ---------------------------------------------------------------------------
   // Game result
   // ---------------------------------------------------------------------------
 
-  getGameWinners(): GameWinner[] {
+  getRoundWinners(): RoundWinner[] {
     const state = this.sm.getState();
     return determineRoundWinners(state.players, state.roundResults);
   }
@@ -136,11 +166,17 @@ export class GameEngine {
   // Private helpers
   // ---------------------------------------------------------------------------
 
-  private applyCardToState(state: GameState, playerId: string, card: number): GameState {
+  private applyCardToState(
+    state: GameState,
+    playerId: string,
+    card: number,
+  ): GameState {
     return {
       ...state,
       players: state.players.map((p) =>
-        p.id === playerId ? { ...p, hand: p.hand.filter((c) => c !== card) } : p
+        p.id === playerId
+          ? { ...p, hand: p.hand.filter((c) => c !== card) }
+          : p,
       ),
       currentTrick: {
         ...state.currentTrick,
@@ -167,17 +203,19 @@ export class GameEngine {
 
     const trickResult = calculateTrickWinner(
       currentTrick.playedCards,
-      players.map((p) => p.id)
+      players.map((p) => p.id),
     );
 
     // Update tricksTaken for the winner
     const updatedPlayers: PlayerState[] = players.map((p, i) =>
-      i === trickResult.winnerIdx ? { ...p, tricksTaken: p.tricksTaken + 1 } : p
+      i === trickResult.trickTakerIdx
+        ? { ...p, tricksTaken: p.tricksTaken + 1 }
+        : p,
     );
 
     const updatedTrick = {
       ...currentTrick,
-      winnerIndex: trickResult.winnerIdx,
+      winnerIndex: trickResult.trickTakerIdx,
       winnerHasSpecialPower: trickResult.hasSpecialPower,
     };
 
@@ -185,7 +223,7 @@ export class GameEngine {
       ...state,
       players: updatedPlayers,
       currentTrick: updatedTrick,
-      lastTrickWinnerIndex: trickResult.winnerIdx,
+      lastTrickWinnerIndex: trickResult.trickTakerIdx,
     };
     this.sm.setState(newState);
 
@@ -198,7 +236,7 @@ export class GameEngine {
         newState = {
           ...this.sm.getState(),
           awaitingLeaderSelection: true,
-          currentPlayerIndex: trickResult.winnerIdx,
+          currentPlayerIndex: trickResult.trickTakerIdx,
         };
         this.sm.setState(newState);
         // Stay in trick-resolution until leader is chosen
@@ -206,11 +244,11 @@ export class GameEngine {
       }
 
       // Normal: winner leads the next trick
-      const nextTrick = createEmptyTrick(trickResult.winnerIdx);
+      const nextTrick = createEmptyTrick(trickResult.trickTakerIdx);
       newState = {
         ...this.sm.getState(),
         awaitingLeaderSelection: false,
-        currentPlayerIndex: trickResult.winnerIdx,
+        currentPlayerIndex: trickResult.trickTakerIdx,
         currentTrick: nextTrick,
       };
       this.sm.setState(newState);
@@ -242,7 +280,9 @@ export class GameEngine {
   private applyRoundStart(): void {
     const state = this.sm.getState();
     const { updatedPlayers, startingPlayerIndex } = dealCards(state.players);
-    const nextRound = state.currentRound + (state.phase === "round-start" && state.currentRound > 0 ? 1 : 0);
+    const nextRound =
+      state.currentRound +
+      (state.phase === "round-start" && state.currentRound > 0 ? 1 : 0);
 
     const newState: GameState = {
       ...state,
@@ -268,7 +308,7 @@ export class GameEngine {
  */
 export function createInitialGameState(
   gameId: number,
-  players: PlayerState[]
+  players: PlayerState[],
 ): GameState {
   return {
     gameId,

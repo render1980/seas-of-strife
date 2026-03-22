@@ -280,8 +280,8 @@ describe("GameEngine", () => {
       const gs = engine.getGameState();
 
       if (gs.awaitingLeaderSelection) {
-        const winnerIdx = gs.currentPlayerIndex;
-        engine.selectNextLeader(gs.players[winnerIdx].id, winnerIdx);
+        const trickTakerIdx = gs.currentPlayerIndex;
+        engine.selectNextLeader(gs.players[trickTakerIdx].id, trickTakerIdx);
         continue;
       }
 
@@ -319,7 +319,7 @@ describe("GameEngine", () => {
       awaitingLeaderSelection: false,
     };
     const engine = new GameEngine(state);
-    const winners = engine.getGameWinners();
+    const winners = engine.getRoundWinners();
     expect(winners.length).toBe(3);
     expect(winners[0].playerId).toBe("player-0");
   });

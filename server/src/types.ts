@@ -56,7 +56,7 @@ export interface TrickState {
   /** Index into players array who opened this trick */
   startingPlayerIndex: number;
   /** Set after resolution: index into players array */
-  winnerIdx?: number;
+  trickTakerIdx?: number;
   /** Whether trick winner has the special power to select next leader */
   winnerHasSpecialPower?: boolean;
 }
@@ -106,13 +106,13 @@ export interface MoveResult {
 }
 
 export interface TrickResult {
-  winnerIdx: number;
+  trickTakerIdx: number;
   winnerId: string;
   winningCard: number;
   hasSpecialPower: boolean;
 }
 
-export interface GameWinner {
+export interface RoundWinner {
   playerId: string;
   name: string;
   totalTricksTaken: number;

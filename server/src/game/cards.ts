@@ -1,5 +1,11 @@
 import { type Color, SUIT_DEFINITIONS, DECK_LENGTH  } from "../types";
 
+/**
+ * Functions which are specific to the card deck and suits, but not game logic.
+ * E.g. creating a shuffled deck, determining suit from card value, etc.
+ * These are used by the game engine and also by the bot AI for card evaluation.
+ */
+
 /** All 60 card values in order */
 export const ALL_CARDS: number[] = SUIT_DEFINITIONS.flatMap(({ min, max }) => {
   const cards: number[] = [];

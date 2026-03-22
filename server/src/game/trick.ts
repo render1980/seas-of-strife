@@ -1,5 +1,17 @@
+import type {
+  GameState,
+  PlayedCard,
+  PlayerState,
+  TrickResult,
+  TrickState,
+  ValidationResult,
+} from "../types";
 import { getSuitFromCard, isHighestCardOfSuit } from "./cards";
-import type { GameState, PlayedCard, PlayerState, TrickResult, TrickState, ValidationResult } from "../types";
+
+/**
+ * This file contains logic for resolving trick winners and validating card plays.
+ * It only belongs to actions within each trick, not the broader game lifecycle (rounds, scoring, etc).
+ */
 
 /**
  * Builds a blank trick state for the start of a trick.
@@ -26,7 +38,7 @@ export function createEmptyTrick(startingPlayerIndex: number): TrickState {
  */
 export function calculateTrickWinner(
   playedCards: PlayedCard[],
-  playerIds: string[]
+  playerIds: string[],
 ): TrickResult {
   if (playedCards.length === 0) {
     throw new Error("Cannot resolve an empty trick");
@@ -56,16 +68,18 @@ export function calculateTrickWinner(
 
   // The highest card value among candidates wins
   const winner = candidateCards.reduce((best, pc) =>
-    pc.card > best.card ? pc : best
+    pc.card > best.card ? pc : best,
   );
 
   const winnerIndex = playerIds.indexOf(winner.playerId);
   if (winnerIndex === -1) {
-    throw new Error(`Winner playerId "${winner.playerId}" not found in playerIds`);
+    throw new Error(
+      `Winner playerId "${winner.playerId}" not found in playerIds`,
+    );
   }
 
   return {
-    winnerIdx: winnerIndex,
+    trickTakerIdx: winnerIndex,
     winnerId: winner.playerId,
     winningCard: winner.card,
     hasSpecialPower: isHighestCardOfSuit(winner.card),
@@ -83,15 +97,20 @@ export function calculateTrickWinner(
  * Once a second suit enters the trick (because someone had no matching cards),
  * subsequent players must follow either the leading suit OR the new suit.
  */
-export function getFollowSuitCards(player: PlayerState, state: GameState): number[] {
+export function getFollowSuitCards(
+  player: PlayerState,
+  state: GameState,
+): number[] {
   const { playedCards } = state.currentTrick;
 
   // Collect the suits that are "in play" in this trick
-  const suitsInTrick = new Set(playedCards.map((pc) => getSuitFromCard(pc.card)));
+  const suitsInTrick = new Set(
+    playedCards.map((pc) => getSuitFromCard(pc.card)),
+  );
 
   // Cards in the player's hand that match any suit in the trick
   const matchingCards = player.hand.filter((c) =>
-    suitsInTrick.has(getSuitFromCard(c))
+    suitsInTrick.has(getSuitFromCard(c)),
   );
 
   // If the player can follow any trick suit they must
@@ -120,7 +139,7 @@ export function getValidCards(playerId: string, state: GameState): number[] {
 export function validateCardPlay(
   playerId: string,
   card: number,
-  state: GameState
+  state: GameState,
 ): ValidationResult {
   // Check it is this player's turn
   const currentPlayer = state.players[state.currentPlayerIndex];
