@@ -20,14 +20,12 @@ cd server && bun install
 # 1. Start PostgreSQL
 docker-compose up -d
 
-cd server
-
 # 2. Initialize schema
-bun run scripts/init-db.ts
+bun run server/scripts/init-db.ts
 # Or `bun run init-db`
 
 # 3. Start dev server
-bun run dev
+cd server && bun run dev
 ```
 
 **Local connection details:** `postgresql://postgres:postgres@localhost:5432/seas_of_strife`

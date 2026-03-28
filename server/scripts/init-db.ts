@@ -75,7 +75,7 @@ async function main(): Promise<void> {
     for (const tableName of expectedTables) {
       if (createdTables.includes(tableName)) {
         const count = await sql`SELECT COUNT(*) as cnt FROM ${sql(tableName)}`;
-        console.log(`   ${tableName}: ${count[0].cnt} rows`);
+        console.log(`   ${tableName}: ${count[0]?.cnt} rows`);
       }
     }
 

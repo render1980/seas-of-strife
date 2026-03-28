@@ -27,19 +27,7 @@ export function initDatabase(): postgres.Sql {
   if (databaseUrl) {
     sql = postgres(databaseUrl);
   } else {
-    const host = process.env.DATABASE_HOST || "localhost";
-    const port = parseInt(process.env.DATABASE_PORT || "5432");
-    const database = process.env.DATABASE_NAME || "seas_of_strife";
-    const user = process.env.DATABASE_USER || "postgres";
-    const password = process.env.DATABASE_PASSWORD || "postgres";
-
-    sql = postgres({
-      host,
-      port,
-      database,
-      user,
-      password,
-    });
+    throw new Error("DATABASE_URL not set. Please provide connection parameters from the environment (e.g. by using .env configuration).");
   }
 
   return sql;
