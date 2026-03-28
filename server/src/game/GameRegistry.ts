@@ -1,5 +1,5 @@
 import { GameEngine, type IPersistService } from "./engine";
-import { gameStateLoader } from "../db/GameStateLoader";
+import { gameStateLoader } from "../db/repositories/GameRepository";
 import type { GameState, PlayerState } from "../types";
 
 /**

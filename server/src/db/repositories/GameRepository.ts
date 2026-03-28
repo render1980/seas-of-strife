@@ -25,21 +25,33 @@ export class GameRepository {
   }
 
   /**
-   * Load the complete game state by gameId.
-   * Returns null if game not found.
+   * Load and deserialize a game state from the database.
+   * Returns null if not found or state is structurally invalid.
    */
   async loadGameState(gameId: number): Promise<GameState | null> {
     const sql = getDb();
-    
-    const result = await sql<[{ game_state: string }]>`
-      SELECT game_state FROM games WHERE game_id = ${gameId}
-    `;
 
-    if (result.length === 0) {
+    try {
+      const result = await sql<[{ game_state: string }]>`
+        SELECT game_state FROM games WHERE game_id = ${gameId}
+      `;
+
+      if (!result.length) {
+        return null;
+      }
+
+      const gameState: GameState = JSON.parse(result[0].game_state);
+
+      if (!gameState.gameId || !gameState.phase || !gameState.players || !gameState.currentTrick) {
+        console.error(`Invalid game state structure for gameId ${gameId}`);
+        return null;
+      }
+
+      return gameState;
+    } catch (error) {
+      console.error(`Failed to load game state for gameId ${gameId}:`, error);
       return null;
     }
-
-    return JSON.parse(result[0].game_state);
   }
 
   /**
@@ -57,7 +69,7 @@ export class GameRepository {
       SELECT id FROM games WHERE game_id = ${gameId}
     `;
 
-    if (gameRecord.length === 0) {
+    if (!gameRecord.length) {
       throw new Error(`Game ${gameId} not found`);
     }
 
@@ -89,7 +101,7 @@ export class GameRepository {
       SELECT id FROM games WHERE game_id = ${gameId}
     `;
 
-    if (gameRecord.length === 0) {
+    if (!gameRecord.length) {
       throw new Error(`Game ${gameId} not found`);
     }
 
@@ -105,6 +117,9 @@ export class GameRepository {
     const medals = ["gold", "silver", "bronze"];
     for (let i = 0; i < winners.length; i++) {
       const winner = winners[i];
+      if (!winner) {
+        continue;
+      }
       const medal = medals[i] || null;
 
       if (medal) {
@@ -220,3 +235,6 @@ export class GameRepository {
 
 // Singleton instance
 export const gameRepository = new GameRepository();
+
+// Alias so callers that used gameStateLoader don't need updating
+export const gameStateLoader = gameRepository;
