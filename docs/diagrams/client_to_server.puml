@@ -1,0 +1,71 @@
+@startuml client_to_server
+title Seas of Strife — Client ↔ Server Communication
+
+actor Client
+participant Server
+participant SessionStore
+participant RoomManager
+database PostgreSQL as DB
+
+== Authentication ==
+
+Client -> Server : POST /api/login {login, password}
+Server -> DB : lookup / create user
+DB --> Server : userId
+Server -> SessionStore : createSession(userId, login)
+SessionStore --> Server : token
+Server --> Client : {token, login}
+
+== WebSocket Connection ==
+
+Client -> Server : GET /ws?token=...
+Server -> SessionStore : getSession(token)
+SessionStore --> Server : session
+Server -> Server : upgrade to WebSocket
+Server --> Client : WS open
+
+== Lobby ==
+
+Client -> Server : {type: "create_game"}
+Server -> RoomManager : createRoom(playerId, login, ws)
+Server --> Client : {type: "game_created", gameId}
+Server --> Client : {type: "lobby_update", players, creatorId}
+
+Client -> Server : {type: "join_game", gameId}
+Server -> RoomManager : joinRoom(gameId, playerId, login, ws)
+Server --> Client : {type: "lobby_update", players, creatorId}
+
+== Game Start ==
+
+Client -> Server : {type: "start_game"}
+Server -> RoomManager : startGame(playerId)
+note right: fills bots, creates engine, deals cards
+Server --> Client : {type: "game_state", state} (per player)
+
+== In-Game ==
+
+Client -> Server : {type: "play_card", card}
+note right: delegates to GameEngine\n(see main_flow.puml)
+Server --> Client : {type: "game_state"}\n| {type: "trick_resolved"}\n| {type: "round_ended"}\n| {type: "game_ended"}
+
+Client -> Server : {type: "select_leader", playerIndex}
+Server --> Client : {type: "game_state", state}
+
+== Disconnect / Reconnect ==
+
+Client ->x Server : WS close
+Server -> Server : start 30s auto-play timer
+Server --> Client : {type: "player_disconnected", playerId}
+
+Client -> Server : GET /ws?token=... (reconnect)
+Server -> Server : restore socket, cancel timer
+Server --> Client : {type: "game_state", state}
+Server --> Client : {type: "player_reconnected", playerId}
+
+== Logout ==
+
+Client -> Server : POST /api/logout {token}
+Server -> SessionStore : invalidate(token)
+Server --> Client : {ok: true}
+
+@enduml
