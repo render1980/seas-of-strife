@@ -1,9 +1,7 @@
 import type { GamePhase, GameState } from "../types";
 
 /**
- * This file implements a simple state machine to manage game phases and enforce valid transitions.
- * The GameEngine uses this to control the flow of the game and ensure that actions are only taken
- * when appropriate for the current phase.
+ * A simple state machine to manage game phases and enforce valid transitions (called by engine.ts).
  * 
  * The phases are:
  * - "waiting": Before the game starts, players can join. Transition to "round-start" when ready.
@@ -16,6 +14,7 @@ import type { GamePhase, GameState } from "../types";
  *     - Transition to "round-start" for the next round, or
  *     - Transition to "game-end" if all rounds are done.
  * - "game-end": Final state after all rounds are complete. No further transitions allowed.
+ *
  */
 
 /** Valid phase transitions */
