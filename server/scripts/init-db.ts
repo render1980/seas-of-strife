@@ -25,34 +25,21 @@ async function main(): Promise<void> {
       console.log(`📍 Using DATABASE_URL`);
       sql = postgres(databaseUrl);
     } else {
-      const host = process.env.DATABASE_HOST || "localhost";
-      const port = parseInt(process.env.DATABASE_PORT || "5432");
-      const database = process.env.DATABASE_NAME || "seas_of_strife";
-      const user = process.env.DATABASE_USER || "postgres";
-      const password = process.env.DATABASE_PASSWORD || "postgres";
-
-      console.log(`📍 Connecting to ${host}:${port}/${database} as ${user}`);
-      sql = postgres({
-        host,
-        port,
-        database,
-        user,
-        password,
-      });
+      throw new Error("DATABASE_URL not set. Please provide connection parameters from the environment (e.g. by using .env configuration).");
     }
 
     // Test connection
-    console.log("🔗 Testing connection...");
+    console.log("Testing connection...");
     await sql`SELECT 1`;
     console.log("✅ Connection successful\n");
 
     // Run schema
-    console.log("📝 Executing schema...");
+    console.log("Executing schema...");
     await sql.unsafe(schema);
     console.log("✅ Schema deployed successfully\n");
 
     // Verify tables
-    console.log("🔍 Verifying tables...");
+    console.log("Verifying tables...");
     const tables = await sql`
       SELECT table_name 
       FROM information_schema.tables 
