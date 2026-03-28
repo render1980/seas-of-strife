@@ -185,6 +185,43 @@ export class GameRepository {
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // User / auth queries
+  // ---------------------------------------------------------------------------
+
+  async findUserByLogin(
+    login: string
+  ): Promise<{ id: number; password_hash: string; password_salt: string } | null> {
+    const sql = getDb();
+    const rows = await sql<
+      [{ id: number; password_hash: string; password_salt: string }]
+    >`
+      SELECT id, password_hash, password_salt FROM users WHERE login = ${login}
+    `;
+    return rows.length > 0 ? rows[0] : null;
+  }
+
+  async createUser(
+    login: string,
+    passwordHash: string,
+    passwordSalt: string
+  ): Promise<number> {
+    const sql = getDb();
+    const result = await sql<[{ id: number }]>`
+      INSERT INTO users (login, password_hash, password_salt)
+      VALUES (${login}, ${passwordHash}, ${passwordSalt})
+      RETURNING id
+    `;
+    return result[0].id;
+  }
+
+  async createPlayerProfile(userId: number): Promise<void> {
+    const sql = getDb();
+    await sql`
+      INSERT INTO player_profiles (user_id) VALUES (${userId})
+    `;
+  }
+
   /**
    * Delete a game (after archiving if needed).
    */

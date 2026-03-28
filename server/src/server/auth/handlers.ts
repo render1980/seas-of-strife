@@ -1,4 +1,4 @@
-import { getDb } from "../../db/connection";
+import { gameRepository } from "../../db/repositories/GameRepository";
 import type { SessionStore } from "./sessions";
 
 /**
@@ -26,25 +26,17 @@ export async function handleLogin(
     );
   }
 
-  const sql = getDb();
+  const existing = await gameRepository.findUserByLogin(login);
 
-  // Check if user exists
-  const existing = await sql<
-    [{ id: number; password_hash: string; password_salt: string }]
-  >`
-    SELECT id, password_hash, password_salt FROM users WHERE login = ${login}
-  `;
-
-  if (existing.length > 0) {
-    const user = existing[0]!;
+  if (existing) {
     // Validate password
-    const hash = await hashPassword(password, user.password_salt);
-    if (hash !== user.password_hash) {
+    const hash = await hashPassword(password, existing.password_salt);
+    if (hash !== existing.password_hash) {
       return Response.json({ error: "Invalid password" }, { status: 401 });
     }
 
     try {
-      const token = sessionStore.createSession(user.id, login);
+      const token = sessionStore.createSession(existing.id, login);
       return Response.json({ token, login });
     } catch {
       return Response.json(
@@ -57,18 +49,8 @@ export async function handleLogin(
   // Create new user
   const salt = crypto.randomUUID();
   const hash = await hashPassword(password, salt);
-
-  const result = await sql<[{ id: number }]>`
-    INSERT INTO users (login, password_hash, password_salt)
-    VALUES (${login}, ${hash}, ${salt})
-    RETURNING id
-  `;
-  const userId = result[0]!.id;
-
-  // Create player profile
-  await sql`
-    INSERT INTO player_profiles (user_id) VALUES (${userId})
-  `;
+  const userId = await gameRepository.createUser(login, hash, salt);
+  await gameRepository.createPlayerProfile(userId);
 
   const token = sessionStore.createSession(userId, login);
   return Response.json({ token, login });
