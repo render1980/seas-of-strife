@@ -1,5 +1,5 @@
 import { getDb } from "../connection";
-import type { GameState, RoundResult } from "../../types";
+import type { GameState, RoundResult } from "../../types/types";
 
 /**
  * GameRepository handles all persistence for game state and results.

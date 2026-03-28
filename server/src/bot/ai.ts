@@ -1,6 +1,6 @@
 import { getSuitFromCard } from "../game/cards";
 import { getValidCards } from "../game/trick";
-import type { GameState } from "../types";
+import type { GameState } from "../types/types";
 
 /**
  * Bot AI for Seas of Strife.

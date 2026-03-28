@@ -1,6 +1,6 @@
 import { GameEngine, type IPersistService } from "./engine";
 import { gameStateLoader } from "../db/repositories/GameRepository";
-import type { GameState, PlayerState } from "../types";
+import type { GameState, PlayerState } from "../types/types";
 
 /**
  * GameRegistry manages active game instances.

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "bun:test";
-import { calculateTrickWinner } from "../src/game/trick";
-import type { PlayedCard } from "../src/types";
+import { calculateTrickWinner } from "../../src/game/trick";
+import type { PlayedCard } from "../../src/types/types";
 
 // ---------------------------------------------------------------------------
 // Trick Resolution

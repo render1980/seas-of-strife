@@ -4,13 +4,13 @@ import {
   type MoveResult,
   type PlayerState,
   TOTAL_ROUNDS_PER_GAME,
-} from "../types";
+} from "../types/types";
 import {
   calculateRoundScores,
   dealCards,
   determineRoundWinners,
 } from "./round";
-import { GameStateMachine } from "./state-machine";
+import { GameStateMachine } from "./GameStateMachine";
 import {
   calculateTrickWinner,
   createEmptyTrick,

@@ -12,6 +12,14 @@ interface PlayerConnection {
 }
 
 /**
+ * Callback invoked after auto-play completes so the caller can broadcast results.
+ */
+export type OnAutoPlayCallback = (
+  gameId: number,
+  playerId: string,
+) => Promise<void>;
+
+/**
  * ConnectionManager tracks player connections and handles disconnection timeouts.
  * Fires auto-play after 30 seconds of inactivity.
  */
@@ -19,9 +27,18 @@ export class ConnectionManager {
   private connections: Map<string, PlayerConnection> = new Map();
   private gameRegistry: GameRegistry;
   private readonly DISCONNECT_TIMEOUT_MS = 30000; // 30 seconds
+  private onAutoPlay?: OnAutoPlayCallback;
 
   constructor(gameRegistry: GameRegistry) {
     this.gameRegistry = gameRegistry;
+  }
+
+  /**
+   * Register a callback that fires after auto-play
+   * so the RoomManager can broadcast results.
+   */
+  setOnAutoPlay(cb: OnAutoPlayCallback): void {
+    this.onAutoPlay = cb;
   }
 
   /**
@@ -155,6 +172,12 @@ export class ConnectionManager {
         console.warn(
           `[ConnectionManager] Auto-play failed for ${playerId}: ${result.error}`
         );
+        return;
+      }
+
+      // Notify listeners (RoomManager) so results are broadcast
+      if (this.onAutoPlay) {
+        await this.onAutoPlay(gameId, playerId);
       }
     } catch (error) {
       console.error(

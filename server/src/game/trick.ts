@@ -5,7 +5,7 @@ import type {
   TrickResult,
   TrickState,
   ValidationResult,
-} from "../types";
+} from "../types/types";
 import { getSuitFromCard, isHighestCardOfSuit } from "./cards";
 
 /**

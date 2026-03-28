@@ -1,51 +1,31 @@
 @startuml main_flow
-title Seas of Strife — Main Game Flow
+title Seas of Strife — Game Mechanics
 
 actor Player
-participant ConnectionManager
-participant GameRegistry
 participant GameEngine
 participant StateMachine
 participant "round.ts" as Round
 participant "trick.ts" as Trick
-
-== Game Setup ==
-
-Player -> GameRegistry : createGame(gameId, players)
-GameRegistry -> GameEngine : new GameEngine(initialState)
-GameEngine -> StateMachine : new GameStateMachine(state{phase=waiting})
-GameRegistry --> Player : engine
-
-== Connection Tracking ==
-
-Player -> ConnectionManager : playerConnected(gameId, playerId)
-ConnectionManager -> ConnectionManager : store connection, clear timeout
+participant "cards.ts" as Cards
 
 == Game Start ==
 
 Player -> GameEngine : startGame()
 GameEngine -> StateMachine : transition(round-start)
+GameEngine -> GameEngine : applyRoundStart()
 GameEngine -> Round : dealCards(players)
+Round -> Cards : createShuffledDeck()
+Cards --> Round : shuffled deck
 Round --> GameEngine : {updatedPlayers, startingPlayerIndex}
 GameEngine -> StateMachine : transition(trick-playing)
 
 == Playing a Card ==
 
 loop each card in trick
-    Player -> ConnectionManager : playerDisconnected(gameId, playerId)
-    ConnectionManager -> ConnectionManager : start 30s timeout
-
-    alt player reconnects in time
-        Player -> ConnectionManager : playerConnected(gameId, playerId)
-        ConnectionManager -> ConnectionManager : clear timeout
-    else 30s timeout fires
-        ConnectionManager -> GameRegistry : getOrLoadGame(gameId)
-        GameRegistry --> ConnectionManager : engine
-        ConnectionManager -> GameEngine : autoPlayCard(playerId)
-    end
-
     Player -> GameEngine : playCard(playerId, card)
     GameEngine -> Trick : validateCardPlay(playerId, card, state)
+    Trick -> Cards : getSuitFromCard(card)
+    Cards --> Trick : suit
     Trick --> GameEngine : {valid} / {invalid, reason}
 
     alt invalid
@@ -61,11 +41,13 @@ end
 
 GameEngine -> StateMachine : transition(trick-resolution)
 GameEngine -> Trick : calculateTrickWinner(playedCards)
+Trick -> Cards : getSuitFromCard() per played card
+Trick -> Cards : isHighestCardOfSuit(winnerCard)
+Cards --> Trick : hasSpecialPower
 Trick --> GameEngine : {trickTakerIdx, hasSpecialPower}
 GameEngine -> GameEngine : update tricksTaken for winner
 
 alt winner has special power
-    GameEngine -> GameEngine : awaitingLeaderSelection = true
     GameEngine --> Player : (prompt leader selection)
     Player -> GameEngine : selectNextLeader(chooserId, chosenPlayerIndex)
     GameEngine -> StateMachine : transition(trick-playing)
@@ -78,21 +60,22 @@ end
 
 note over GameEngine : all players' hands are empty
 
+GameEngine -> StateMachine : transition(round-end)
 GameEngine -> Round : calculateRoundScores(round, players)
 Round --> GameEngine : roundResult
-GameEngine -> StateMachine : transition(round-end)
 
 alt more rounds remain
     GameEngine -> StateMachine : transition(round-start)
     GameEngine -> Round : dealCards(players)
+    Round -> Cards : createShuffledDeck()
+    Cards --> Round : shuffled deck
+    Round --> GameEngine : {updatedPlayers, startingPlayerIndex}
     GameEngine -> StateMachine : transition(trick-playing)
 else all 5 rounds done
     GameEngine -> Round : determineRoundWinners(players, roundResults)
     Round --> GameEngine : winners (gold/silver/bronze)
     GameEngine -> StateMachine : transition(game-end)
-    GameEngine --> Player : {success: true, gameEnded: true}
-    ConnectionManager -> ConnectionManager : cleanupGame(gameId)
-    GameRegistry -> GameRegistry : removeGame(gameId)
+    GameEngine --> Player : {gameEnded: true, winners}
 end
 
 @enduml

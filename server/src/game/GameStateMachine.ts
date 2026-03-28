@@ -1,4 +1,4 @@
-import type { GamePhase, GameState } from "../types";
+import type { GamePhase, GameState } from "../types/types";
 
 /**
  * A simple state machine to manage game phases and enforce valid transitions (called by engine.ts).

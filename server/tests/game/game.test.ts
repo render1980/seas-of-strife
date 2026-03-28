@@ -1,10 +1,10 @@
 import { describe, expect, it } from "bun:test";
-import { BotPlayer } from "../src/bot/ai";
-import { ALL_CARDS, getSuitFromCard, isHighestCardOfSuit } from "../src/game/cards";
-import { GameEngine, createInitialGameState } from "../src/game/engine";
-import { dealCards } from "../src/game/round";
-import { getValidCards, validateCardPlay } from "../src/game/trick";
-import { type GameState, type PlayedCard, type PlayerState, TOTAL_ROUNDS_PER_GAME } from "../src/types";
+import { BotPlayer } from "../../src/bot/ai";
+import { ALL_CARDS, getSuitFromCard, isHighestCardOfSuit } from "../../src/game/cards";
+import { GameEngine, createInitialGameState } from "../../src/game/engine";
+import { dealCards } from "../../src/game/round";
+import { getValidCards, validateCardPlay } from "../../src/game/trick";
+import { type GameState, type PlayedCard, type PlayerState, TOTAL_ROUNDS_PER_GAME } from "../../src/types/types";
 
 // ---------------------------------------------------------------------------
 // Helpers
