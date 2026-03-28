@@ -20,7 +20,7 @@ export function createEmptyTrick(startingPlayerIndex: number): TrickState {
   return {
     playedCards: [],
     startingPlayerIndex,
-    winnerIndex: undefined,
+    trickTakerIdx: undefined,
     winnerHasSpecialPower: undefined,
   };
 }
@@ -36,7 +36,7 @@ export function createEmptyTrick(startingPlayerIndex: number): TrickState {
  * 5. The player who played that card takes the trick.
  * 6. If the winning card is the highest in its suit, the winner has special power.
  */
-export function calculateTrickWinner(
+export function calculateTrickTaker(
   playedCards: PlayedCard[],
   playerIds: string[],
 ): TrickResult {
@@ -71,15 +71,15 @@ export function calculateTrickWinner(
     pc.card > best.card ? pc : best,
   );
 
-  const winnerIndex = playerIds.indexOf(winner.playerId);
-  if (winnerIndex === -1) {
+  const takerIndex = playerIds.indexOf(winner.playerId);
+  if (takerIndex === -1) {
     throw new Error(
       `Winner playerId "${winner.playerId}" not found in playerIds`,
     );
   }
 
   return {
-    trickTakerIdx: winnerIndex,
+    trickTakerIdx: takerIndex,
     winnerId: winner.playerId,
     winningCard: winner.card,
     hasSpecialPower: isHighestCardOfSuit(winner.card),
@@ -97,7 +97,7 @@ export function calculateTrickWinner(
  * Once a second suit enters the trick (because someone had no matching cards),
  * subsequent players must follow either the leading suit OR the new suit.
  */
-export function getFollowSuitCards(
+function getFollowSuitCards(
   player: PlayerState,
   state: GameState,
 ): number[] {
@@ -144,7 +144,7 @@ export function validateCardPlay(
   // Check it is this player's turn
   const currentPlayer = state.players[state.currentPlayerIndex];
   if (!currentPlayer || currentPlayer.id !== playerId) {
-    return { valid: false, reason: "It is not your turn" };
+    return { valid: false, reason: `It is not ${playerId}'s turn` };
   }
 
   // Check card is playable
@@ -152,7 +152,7 @@ export function validateCardPlay(
   if (!validCards.includes(card)) {
     return {
       valid: false,
-      reason: "Card is not valid to play",
+      reason: `Card ${card} is not valid to play`,
     };
   }
 

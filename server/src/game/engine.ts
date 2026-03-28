@@ -12,7 +12,7 @@ import {
 } from "./round";
 import { GameStateMachine } from "./GameStateMachine";
 import {
-  calculateTrickWinner,
+  calculateTrickTaker,
   createEmptyTrick,
   getValidCards,
   validateCardPlay,
@@ -242,7 +242,7 @@ export class GameEngine {
     const state = this.sm.getState();
     const { players, currentTrick, currentRound, roundResults } = state;
 
-    const trickResult = calculateTrickWinner(
+    const trickResult = calculateTrickTaker(
       currentTrick.playedCards,
       players.map((p) => p.id),
     );
@@ -256,7 +256,7 @@ export class GameEngine {
 
     const updatedTrick = {
       ...currentTrick,
-      winnerIndex: trickResult.trickTakerIdx,
+      trickTakerIdx: trickResult.trickTakerIdx,
       winnerHasSpecialPower: trickResult.hasSpecialPower,
     };
 
@@ -264,7 +264,7 @@ export class GameEngine {
       ...state,
       players: updatedPlayers,
       currentTrick: updatedTrick,
-      lastTrickWinnerIndex: trickResult.trickTakerIdx,
+      lastTrickTakerIndex: trickResult.trickTakerIdx,
     };
     this.sm.setState(newState);
     await this.persistState();

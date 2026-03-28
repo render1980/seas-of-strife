@@ -87,7 +87,7 @@ export interface GameState {
   /** When waiting for trick winner to pick the next leader */
   awaitingLeaderSelection: boolean;
   /** Player index who won the last trick (permanent reference for next trick start) */
-  lastTrickWinnerIndex?: number;
+  lastTrickTakerIndex?: number;
 }
 
 export interface ValidationResult {

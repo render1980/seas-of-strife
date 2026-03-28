@@ -26,6 +26,6 @@ export function sanitizeStateForPlayer(
     currentTrick: state.currentTrick,
     roundResults: state.roundResults,
     awaitingLeaderSelection: state.awaitingLeaderSelection,
-    lastTrickWinnerIndex: state.lastTrickWinnerIndex,
+    lastTrickTakerIndex: state.lastTrickTakerIndex,
   };
 }

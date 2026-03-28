@@ -89,7 +89,7 @@ export interface SanitizedGameState {
   currentTrick: GameState["currentTrick"];
   roundResults: RoundResult[];
   awaitingLeaderSelection: boolean;
-  lastTrickWinnerIndex?: number;
+  lastTrickTakerIndex?: number;
 }
 
 export interface GameStateMsg {
