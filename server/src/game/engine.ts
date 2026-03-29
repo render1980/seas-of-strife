@@ -8,8 +8,8 @@ import {
 import { GameStateMachine } from "./GameStateMachine";
 import {
   calculateRoundScores,
-  dealCards,
   calculateRoundWinners,
+  dealCards,
 } from "./round";
 import {
   calculateTrickTaker,
@@ -66,12 +66,8 @@ export class GameEngine {
     return this.sm.getPhase();
   }
 
-  getValidMoves(playerId: string): number[] {
-    return getValidCards(playerId, this.sm.getState());
-  }
-
   // ---------------------------------------------------------------------------
-  // Private persistence helper
+  // Persistence helper
   // ---------------------------------------------------------------------------
 
   async persistState(): Promise<void> {
@@ -104,7 +100,7 @@ export class GameEngine {
    * @param chooserId - the player who has the special power
    * @param chosenPlayerIndex - index into players array who will lead
    */
-  selectNextLeader(chooserId: string, chosenPlayerIndex: number): MoveResult {
+  async selectNextLeader(chooserId: string, chosenPlayerIndex: number): Promise<MoveResult> {
     const state = this.sm.getState();
 
     if (!state.awaitingLeaderSelection) {
@@ -128,7 +124,7 @@ export class GameEngine {
     this.sm.setState(newState);
     this.sm.transition("trick-playing");
 
-    this.persistState(); // Fire and forget
+    await this.persistState();
 
     return { success: true, newState: this.sm.getState() };
   }
@@ -380,7 +376,7 @@ export class GameEngine {
    * Called by ConnectionManager when disconnect timeout occurs.
    */
   async autoPlayCard(playerId: string): Promise<MoveResult> {
-    const validCards = this.getValidMoves(playerId);
+    const validCards = getValidCards(playerId, this.sm.getState());
 
     if (validCards.length === 0) {
       return {

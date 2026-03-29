@@ -5,10 +5,7 @@ import {
   type PlayerState,
   TOTAL_ROUNDS_PER_GAME,
 } from "../../src/types/types";
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
+import { getValidCards } from "../../src/game/trick";
 
 function makePlayers(count: number): PlayerState[] {
   return Array.from({ length: count }, (_, i) => ({
@@ -19,10 +16,6 @@ function makePlayers(count: number): PlayerState[] {
     tricksTakenPerRound: 0,
   }));
 }
-
-// ---------------------------------------------------------------------------
-// Game Engine — full trick cycle
-// ---------------------------------------------------------------------------
 
 describe("GameEngine", () => {
   it("starts game and enters trick-playing phase", () => {
@@ -76,7 +69,7 @@ describe("GameEngine", () => {
       if (!currentPlayer) {
         throw new Error("No current player found");
       }
-      const validCards = engine.getValidMoves(currentPlayer.id);
+      const validCards = getValidCards(currentPlayer.id, gs);
       const result = await engine.playCard(
         currentPlayer.id,
         validCards[0]! as number,
@@ -132,7 +125,7 @@ describe("GameEngine", () => {
       if (!currentPlayer) {
         throw new Error("No current player found");
       }
-      const validCards = engine.getValidMoves(currentPlayer.id);
+      const validCards = getValidCards(currentPlayer.id, gs);
       expect(validCards.length).toBeGreaterThan(0);
       await engine.playCard(currentPlayer.id, validCards[0]! as number);
     }
@@ -145,6 +138,82 @@ describe("GameEngine", () => {
       .players.reduce((s, p) => s + p.tricksTakenPerRound, 0);
     // After round 1 we expect either 15 current tricks or 0 (if round advanced)
     expect(totalTricksTaken).toBeGreaterThanOrEqual(0);
+  });
+
+  it("plays a full game for 3 players and 1 bot", async () => {
+    const players = [...makePlayers(3), { id: "bot-1", name: "Bot 1", isBot: true, hand: [], tricksTakenPerRound: 0 }];
+    const engine = new GameEngine(createInitialGameState(1, players));
+    engine.startGame();
+
+    let maxMoves = TOTAL_ROUNDS_PER_GAME * 15 * 4 + 100; // generous limit
+
+    const inProgress = () => {
+      const p = engine.getPhase();
+      return (
+        p === "trick-playing" ||
+        (p === "trick-resolution" &&
+          engine.getGameState().awaitingLeaderSelection)
+      );
+    };
+
+    while (inProgress() && maxMoves-- > 0) {
+      const gs = engine.getGameState();
+
+      if (gs.awaitingLeaderSelection) {
+        const trickTakerIdx = gs.currentPlayerIndex;
+        engine.selectNextLeader(gs.players[trickTakerIdx]!.id, trickTakerIdx);
+        continue;
+      }
+
+      const currentPlayer = gs.players[gs.currentPlayerIndex];
+      if (!currentPlayer) {
+        throw new Error("No current player found");
+      }
+      const validCards = getValidCards(currentPlayer.id, gs);
+      expect(validCards.length).toBeGreaterThan(0);
+      await engine.playCard(currentPlayer.id, validCards[0]! as number);
+    }
+
+    const finalPhase = engine.getPhase();
+    expect(finalPhase).toBe("game-end");
+  });
+
+  it("plays a full game for 6 players", async () => {
+    const players = makePlayers(6);
+    const engine = new GameEngine(createInitialGameState(1, players));
+    engine.startGame();
+
+    let maxMoves = TOTAL_ROUNDS_PER_GAME * 15 * 6 + 100; // generous limit
+
+    const inProgress = () => {
+      const p = engine.getPhase();
+      return (
+        p === "trick-playing" ||
+        (p === "trick-resolution" &&
+          engine.getGameState().awaitingLeaderSelection)
+      );
+    };
+
+    while (inProgress() && maxMoves-- > 0) {
+      const gs = engine.getGameState();
+
+      if (gs.awaitingLeaderSelection) {
+        const trickTakerIdx = gs.currentPlayerIndex;
+        engine.selectNextLeader(gs.players[trickTakerIdx]!.id, trickTakerIdx);
+        continue;
+      }
+
+      const currentPlayer = gs.players[gs.currentPlayerIndex];
+      if (!currentPlayer) {
+        throw new Error("No current player found");
+      }
+      const validCards = getValidCards(currentPlayer.id, gs);
+      expect(validCards.length).toBeGreaterThan(0);
+      await engine.playCard(currentPlayer.id, validCards[0]! as number);
+    }
+
+    const finalPhase = engine.getPhase();
+    expect(finalPhase).toBe("game-end");
   });
 
   it("returns game winners at game end", () => {
@@ -170,5 +239,25 @@ describe("GameEngine", () => {
     const winners = engine.getRoundWinners();
     expect(winners.length).toBe(3);
     expect(winners[0]?.playerId).toBe("player-0");
+  });
+
+  it("handles auto-play for disconnected player", async () => {
+    const players = makePlayers(4);
+    const engine = new GameEngine(createInitialGameState(1, players));
+    engine.startGame();
+
+    const gs = engine.getGameState();
+    const startingPlayer = gs.players[gs.currentPlayerIndex];
+    if (!startingPlayer) {
+      throw new Error("No starting player found");
+    }
+
+    const result = await engine.autoPlayCard(startingPlayer.id);
+    expect(result.success).toBe(true);
+    // The card should be removed from the player's hand
+    const updatedPlayer = engine
+      .getGameState()
+      .players.find((p) => p.id === startingPlayer.id);
+    expect(updatedPlayer?.hand.length).toBeLessThan(startingPlayer.hand.length);
   });
 });
