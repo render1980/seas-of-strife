@@ -1,5 +1,9 @@
 import { describe, expect, it } from "bun:test";
-import { ALL_CARDS, getSuitFromCard, isHighestCardOfSuit } from "../../src/game/cards";
+import {
+  ALL_CARDS,
+  getSuitFromCard,
+  isHighestCardOfSuit,
+} from "../../src/game/cards";
 
 describe("Card definitions", () => {
   it("has no duplicate card values", () => {
@@ -33,9 +37,9 @@ describe("Card definitions", () => {
   });
 
   it("identifies highest card of each suit correctly", () => {
-    expect(isHighestCardOfSuit(10)).toBe(true);  // orange max
-    expect(isHighestCardOfSuit(20)).toBe(true);  // red max
-    expect(isHighestCardOfSuit(74)).toBe(true);  // dark_red max
+    expect(isHighestCardOfSuit(10)).toBe(true); // orange max
+    expect(isHighestCardOfSuit(20)).toBe(true); // red max
+    expect(isHighestCardOfSuit(74)).toBe(true); // dark_red max
     expect(isHighestCardOfSuit(5)).toBe(false);
     expect(isHighestCardOfSuit(11)).toBe(false);
   });

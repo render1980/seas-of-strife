@@ -18,7 +18,11 @@ initDatabase();
 const sessionStore = new SessionStore();
 const gameRegistry = new GameRegistry(gameRepository);
 const connectionManager = new ConnectionManager(gameRegistry);
-const roomManager = new RoomManager(gameRegistry, connectionManager, sessionStore);
+const roomManager = new RoomManager(
+  gameRegistry,
+  connectionManager,
+  sessionStore,
+);
 
 // Wire auto-play broadcast: after 30s timeout fires, broadcast updated state
 connectionManager.setOnAutoPlay(async (gameId, playerId) => {

@@ -5,7 +5,8 @@
   "private": true,
   "scripts": {
     "init-db": "bun run scripts/init-db.ts",
-    "dev": "bun --watch index.ts"
+    "dev": "bun --watch index.ts",
+    "fmt": "npx prettier --write '**/*.ts'"
   },
   "dependencies": {
     "postgres": "^3.4"

@@ -119,7 +119,8 @@ export class RoomManager {
 
     const room = this.rooms.get(gameId);
     if (!room) throw new Error("Game not found");
-    if (room.creatorId !== requesterId) throw new Error("Only creator can stop");
+    if (room.creatorId !== requesterId)
+      throw new Error("Only creator can stop");
 
     this.broadcast(room, { type: "game_stopped" });
     this.connectionManager.cleanupGame(gameId);
@@ -133,13 +134,20 @@ export class RoomManager {
 
     const room = this.rooms.get(gameId);
     if (!room) throw new Error("Game not found");
-    if (room.creatorId !== requesterId) throw new Error("Only creator can start");
+    if (room.creatorId !== requesterId)
+      throw new Error("Only creator can start");
     if (room.started) throw new Error("Game already started");
 
     // Build player list, fill bots to reach MIN_PLAYERS
     const players: PlayerState[] = [];
     for (const [id, name] of room.playerNames) {
-      players.push({ id, name, isBot: false, hand: [], tricksTakenPerRound: 0 });
+      players.push({
+        id,
+        name,
+        isBot: false,
+        hand: [],
+        tricksTakenPerRound: 0,
+      });
     }
     let botNum = 1;
     while (players.length < 4) {
@@ -200,7 +208,10 @@ export class RoomManager {
   /**
    * Send sanitized game state to each player in the room.
    */
-  broadcastGameState(room: Room, state: import("../../types/types").GameState): void {
+  broadcastGameState(
+    room: Room,
+    state: import("../../types/types").GameState,
+  ): void {
     for (const [pid, ws] of room.players) {
       const sanitized = sanitizeStateForPlayer(state, pid);
       this.send(ws, { type: "game_state", state: sanitized });

@@ -1,4 +1,4 @@
-import { type Color, SUIT_DEFINITIONS, DECK_LENGTH  } from "../types/types";
+import { type Color, SUIT_DEFINITIONS, DECK_LENGTH } from "../types/types";
 
 /**
  * Functions which are specific to the card deck and suits, but not game logic.

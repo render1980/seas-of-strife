@@ -146,7 +146,7 @@ export class ConnectionManager {
    */
   private async handleDisconnectTimeout(
     gameId: number,
-    playerId: string
+    playerId: string,
   ): Promise<void> {
     const key = this.getConnectionKey(gameId, playerId);
     const connection = this.connections.get(key);
@@ -157,7 +157,7 @@ export class ConnectionManager {
     }
 
     console.log(
-      `[ConnectionManager] Player ${playerId} timeout for game ${gameId}, auto-playing card`
+      `[ConnectionManager] Player ${playerId} timeout for game ${gameId}, auto-playing card`,
     );
 
     try {
@@ -170,7 +170,7 @@ export class ConnectionManager {
       const result = await gameEngine.autoPlayCard(playerId);
       if (!result.success) {
         console.warn(
-          `[ConnectionManager] Auto-play failed for ${playerId}: ${result.error}`
+          `[ConnectionManager] Auto-play failed for ${playerId}: ${result.error}`,
         );
         return;
       }
@@ -182,7 +182,7 @@ export class ConnectionManager {
     } catch (error) {
       console.error(
         `[ConnectionManager] Error during auto-play for ${playerId}:`,
-        error
+        error,
       );
     }
   }

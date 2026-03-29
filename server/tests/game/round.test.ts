@@ -1,5 +1,9 @@
 import { describe, expect, it } from "bun:test";
-import { calculateRoundScores, calculateRoundWinners, dealCards } from "../../src/game/round";
+import {
+  calculateRoundScores,
+  calculateRoundWinners,
+  dealCards,
+} from "../../src/game/round";
 import type { PlayerState, RoundResult } from "../../src/types/types";
 
 function makePlayers(count: number): PlayerState[] {
@@ -55,7 +59,10 @@ describe("dealCards", () => {
 
 describe("calculateRoundScores", () => {
   it("calculates scores based on tricks taken", () => {
-    const players = makePlayers(4).map((p, i) => ({ ...p, tricksTakenPerRound: i }));
+    const players = makePlayers(4).map((p, i) => ({
+      ...p,
+      tricksTakenPerRound: i,
+    }));
     const result = calculateRoundScores(1, players);
     expect(result.round).toBe(1);
     expect(result.scores).toEqual([
@@ -64,17 +71,61 @@ describe("calculateRoundScores", () => {
       { playerId: "player-2", tricksTaken: 2 },
       { playerId: "player-3", tricksTaken: 3 },
     ]);
-  });  
+  });
 });
 
 describe("calculateRoundWinners", () => {
   it("returns top N players ranked by tricks taken", () => {
-    const players = makePlayers(5).map((p, i) => ({ ...p, tricksTakenPerRound: i }));
-    const roundResults = [] as RoundResult[];
+    const players = makePlayers(5).map((p, i) => ({
+      ...p,
+      tricksTakenPerRound: i,
+    }));
+    const roundResults = [
+      {
+        round: 1,
+        scores: players.map((p) => ({
+          playerId: p.id,
+          tricksTaken: p.tricksTakenPerRound,
+        })),
+      },
+    ];
     const winners = calculateRoundWinners(players, roundResults, 3);
     expect(winners.length).toBe(3);
     expect(winners[0]!.playerId).toBe("player-0");
     expect(winners[1]!.playerId).toBe("player-1");
     expect(winners[2]!.playerId).toBe("player-2");
+  });
+
+  it("handles ties correctly", () => {
+    const players = makePlayers(4).map((p, i) => ({
+      ...p,
+      tricksTakenPerRound: i < 2 ? 1 : 0,
+    }));
+    const roundResults = [
+      {
+        round: 1,
+        scores: players.map((p) => ({
+          playerId: p.id,
+          tricksTaken: p.tricksTakenPerRound,
+        })),
+      },
+    ];
+    const winners = calculateRoundWinners(players, roundResults, 3);
+    expect(winners.length).toBe(3);
+    expect(winners[0]!.playerId).toBe("player-2");
+    expect(winners[1]!.playerId).toBe("player-3");
+    // player-0 and player-1 are tied with 1 trick each and 1st one among them will be picked
+    expect(winners.some((w) => w.playerId === "player-0")).toBe(true);
+    expect(winners.some((w) => w.playerId === "player-1")).toBe(false);
+  });
+
+  it("returns all players if topN exceeds player count", () => {
+    const players = makePlayers(2).map((p, i) => ({
+      ...p,
+      tricksTakenPerRound: i,
+    }));
+    const roundResults = [] as RoundResult[];
+    const winners = calculateRoundWinners(players, roundResults, 5);
+    expect(winners.length).toBe(2);
   });
 });

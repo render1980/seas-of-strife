@@ -2,7 +2,7 @@ import type { GamePhase, GameState } from "../types/types";
 
 /**
  * A simple state machine to manage game phases and enforce valid transitions (called by engine.ts).
- * 
+ *
  * The phases are:
  * - "waiting": Before the game starts, players can join. Transition to "round-start" when ready.
  * - "round-start": Set up a new round (deal cards, reset states). Transition to "trick-playing".
@@ -19,12 +19,12 @@ import type { GamePhase, GameState } from "../types/types";
 
 /** Valid phase transitions */
 const VALID_TRANSITIONS: Record<GamePhase, GamePhase[]> = {
-  waiting:           ["round-start"],
-  "round-start":     ["trick-playing"],
-  "trick-playing":   ["trick-resolution"],
-  "trick-resolution":["trick-playing", "round-end"],
-  "round-end":       ["round-start", "game-end"],
-  "game-end":        [],
+  waiting: ["round-start"],
+  "round-start": ["trick-playing"],
+  "trick-playing": ["trick-resolution"],
+  "trick-resolution": ["trick-playing", "round-end"],
+  "round-end": ["round-start", "game-end"],
+  "game-end": [],
 };
 
 export class GameStateMachine {
@@ -59,7 +59,7 @@ export class GameStateMachine {
     if (!this.canTransitionTo(next)) {
       throw new Error(
         `Invalid transition: "${this.state.phase}" → "${next}". ` +
-        `Allowed: [${VALID_TRANSITIONS[this.state.phase].join(", ")}]`
+          `Allowed: [${VALID_TRANSITIONS[this.state.phase].join(", ")}]`,
       );
     }
     this.state = { ...this.state, phase: next };

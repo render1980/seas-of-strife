@@ -77,7 +77,10 @@ describe("GameEngine", () => {
         throw new Error("No current player found");
       }
       const validCards = engine.getValidMoves(currentPlayer.id);
-      const result = await engine.playCard(currentPlayer.id, validCards[0]! as number);
+      const result = await engine.playCard(
+        currentPlayer.id,
+        validCards[0]! as number,
+      );
       expect(result.success).toBe(true);
     }
 

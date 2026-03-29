@@ -11,7 +11,7 @@ export class GameRepository {
    */
   async saveGameState(gameState: GameState): Promise<void> {
     const sql = getDb();
-    
+
     await sql`
       INSERT INTO games (game_id, game_state, phase, current_round)
       VALUES (${gameState.gameId}, ${JSON.stringify(gameState)}, ${gameState.phase}, ${gameState.currentRound})
@@ -42,7 +42,12 @@ export class GameRepository {
 
       const gameState: GameState = JSON.parse(result[0].game_state);
 
-      if (!gameState.gameId || !gameState.phase || !gameState.players || !gameState.currentTrick) {
+      if (
+        !gameState.gameId ||
+        !gameState.phase ||
+        !gameState.players ||
+        !gameState.currentTrick
+      ) {
         console.error(`Invalid game state structure for gameId ${gameId}`);
         return null;
       }
@@ -60,7 +65,7 @@ export class GameRepository {
   async saveRoundResult(
     gameId: number,
     roundNumber: number,
-    roundResult: RoundResult
+    roundResult: RoundResult,
   ): Promise<void> {
     const sql = getDb();
 
@@ -92,7 +97,7 @@ export class GameRepository {
       playerId: string;
       name: string;
       totalTricksTaken: number;
-    }>
+    }>,
   ): Promise<void> {
     const sql = getDb();
 
@@ -171,7 +176,9 @@ export class GameRepository {
           const gameState = await this.loadGameState(gameId);
           if (gameState) {
             const totalTricks = gameState.roundResults.reduce((sum, round) => {
-              const score = round.scores.find((s) => s.playerId === realPlayerId);
+              const score = round.scores.find(
+                (s) => s.playerId === realPlayerId,
+              );
               return sum + (score?.tricksTaken ?? 0);
             }, 0);
 
@@ -189,9 +196,11 @@ export class GameRepository {
   // User / auth queries
   // ---------------------------------------------------------------------------
 
-  async findUserByLogin(
-    login: string
-  ): Promise<{ id: number; password_hash: string; password_salt: string } | null> {
+  async findUserByLogin(login: string): Promise<{
+    id: number;
+    password_hash: string;
+    password_salt: string;
+  } | null> {
     const sql = getDb();
     const rows = await sql<
       [{ id: number; password_hash: string; password_salt: string }]
@@ -204,7 +213,7 @@ export class GameRepository {
   async createUser(
     login: string,
     passwordHash: string,
-    passwordSalt: string
+    passwordSalt: string,
   ): Promise<number> {
     const sql = getDb();
     const result = await sql<[{ id: number }]>`
@@ -235,9 +244,7 @@ export class GameRepository {
   /**
    * Get all games for a user (for their profile).
    */
-  async getUserGameResults(
-    userId: number
-  ): Promise<
+  async getUserGameResults(userId: number): Promise<
     Array<{
       gameId: number;
       medal: string | null;
@@ -272,6 +279,3 @@ export class GameRepository {
 
 // Singleton instance
 export const gameRepository = new GameRepository();
-
-// Alias so callers that used gameStateLoader don't need updating
-export const gameStateLoader = gameRepository;

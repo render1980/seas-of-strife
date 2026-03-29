@@ -23,11 +23,13 @@ export function initDatabase(): postgres.Sql {
   }
 
   const databaseUrl = process.env.DATABASE_URL;
-  
+
   if (databaseUrl) {
     sql = postgres(databaseUrl);
   } else {
-    throw new Error("DATABASE_URL not set. Please provide connection parameters from the environment (e.g. by using .env configuration).");
+    throw new Error(
+      "DATABASE_URL not set. Please provide connection parameters from the environment (e.g. by using .env configuration).",
+    );
   }
 
   return sql;

@@ -74,7 +74,7 @@ export class GameEngine {
   // Private persistence helper
   // ---------------------------------------------------------------------------
 
-  private async persistState(): Promise<void> {
+  async persistState(): Promise<void> {
     if (!this.persistService) return;
 
     try {
@@ -112,7 +112,7 @@ export class GameEngine {
     }
 
     const currentPlayer = state.players[state.currentPlayerIndex];
-    if (currentPlayer.id !== chooserId) {
+    if (currentPlayer?.id !== chooserId) {
       return {
         success: false,
         error: "You do not have the special power right now",
@@ -393,7 +393,7 @@ export class GameEngine {
     const randomCard =
       validCards[Math.floor(Math.random() * validCards.length)];
 
-    return this.playCard(playerId, randomCard);
+    return this.playCard(playerId, randomCard!);
   }
 }
 
@@ -418,5 +418,5 @@ export function createInitialGameState(
     currentTrick: createEmptyTrick(0),
     roundResults: [],
     awaitingLeaderSelection: false,
-  };
+  } as GameState;
 }

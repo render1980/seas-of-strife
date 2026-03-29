@@ -46,7 +46,10 @@ export function calculateTrickTaker(
 
   const suitGroups = groupCardsBySuit(playedCards);
   let maxCount = findMaxCountAmongPlayedSuits(suitGroups);
-  const candidateCards: PlayedCard[] = collectCandidateCards(suitGroups, maxCount);
+  const candidateCards: PlayedCard[] = collectCandidateCards(
+    suitGroups,
+    maxCount,
+  );
   const theHighestCardAmongTiedSuits = candidateCards.reduce((best, pc) =>
     pc.card > best.card ? pc : best,
   );
@@ -67,7 +70,10 @@ export function calculateTrickTaker(
 }
 
 // Collect cards from all suits that have that maximum count (tied suits)
-function collectCandidateCards(suitGroups: Map<string, PlayedCard[]>, maxCount: number) {
+function collectCandidateCards(
+  suitGroups: Map<string, PlayedCard[]>,
+  maxCount: number,
+) {
   const candidateCards: PlayedCard[] = [];
   for (const cards of suitGroups.values()) {
     if (cards.length === maxCount) {
@@ -80,7 +86,8 @@ function collectCandidateCards(suitGroups: Map<string, PlayedCard[]>, maxCount: 
 function findMaxCountAmongPlayedSuits(suitGroups: Map<string, PlayedCard[]>) {
   let maxCount = 0;
   for (const playedCardsBySuit of suitGroups.values()) {
-    if (playedCardsBySuit.length > maxCount) maxCount = playedCardsBySuit.length;
+    if (playedCardsBySuit.length > maxCount)
+      maxCount = playedCardsBySuit.length;
   }
   return maxCount;
 }

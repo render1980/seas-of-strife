@@ -15,7 +15,7 @@ export type GamePhase =
   | "trick-resolution"
   | "round-end"
   | "game-end";
-  
+
 export interface Suit {
   color: Color;
   min: number;

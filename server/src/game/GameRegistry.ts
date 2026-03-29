@@ -1,6 +1,20 @@
-import { GameEngine, type IPersistService } from "./engine";
-import { gameStateLoader } from "../db/repositories/GameRepository";
 import type { GameState, PlayerState } from "../types/types";
+import { createInitialGameState, GameEngine } from "./engine";
+
+export interface IGameRegistryService {
+  saveGameState(state: GameState): Promise<void>;
+  saveRoundResult(
+    gameId: number,
+    roundNumber: number,
+    roundResult: any,
+  ): Promise<void>;
+  saveGameResults(
+    gameId: number,
+    realPlayerIds: string[],
+    winners: any[],
+  ): Promise<void>;
+  loadGameState(gameId: number): Promise<GameState | null>;
+}
 
 /**
  * GameRegistry manages active game instances.
@@ -9,42 +23,32 @@ import type { GameState, PlayerState } from "../types/types";
  */
 export class GameRegistry {
   private activeGames: Map<number, GameEngine> = new Map();
-  private persistService: IPersistService;
+  private gameRepository: IGameRegistryService;
 
-  constructor(persistService: IPersistService) {
-    this.persistService = persistService;
+  constructor(gameRepository: IGameRegistryService) {
+    this.gameRepository = gameRepository;
   }
 
   /**
    * Create a new game and add it to the registry.
    */
-  createGame(gameId: number, players: PlayerState[]): GameEngine {
+  async createGame(
+    gameId: number,
+    players: PlayerState[],
+  ): Promise<GameEngine> {
     // Check if game already exists
     if (this.activeGames.has(gameId)) {
       throw new Error(`Game ${gameId} already exists`);
     }
-
-    // Create initial game state
-    const initialState: GameState = {
-      gameId,
-      phase: "waiting",
-      players,
-      currentRound: 0,
-      currentPlayerIndex: 0,
-      currentTrick: {
-        playedCards: [],
-        startingPlayerIndex: 0,
-      },
-      roundResults: [],
-      awaitingLeaderSelection: false,
-    };
-
     // Create engine with persistence
-    const engine = new GameEngine(initialState, this.persistService);
-
+    const engine = new GameEngine(
+      createInitialGameState(gameId, players),
+      this.gameRepository,
+    );
+    // Persist initial state
+    await engine.persistState();
     // Add to registry
     this.activeGames.set(gameId, engine);
-
     return engine;
   }
 
@@ -61,17 +65,16 @@ export class GameRegistry {
     }
 
     // Try to load from database
-    const gameState = await gameStateLoader.loadGameState(gameId);
+    const gameState = await this.gameRepository.loadGameState(gameId);
     if (!gameState) {
       return null;
     }
 
     // Create engine with loaded state
-    const engine = new GameEngine(gameState, this.persistService);
+    const engine = new GameEngine(gameState, this.gameRepository);
 
     // Add to registry for future access
     this.activeGames.set(gameId, engine);
-
     return engine;
   }
 

@@ -1,5 +1,13 @@
 import { createShuffledDeck } from "./cards";
-import { DECK_LENGTH, MIN_PLAYERS, MAX_PLAYERS, type GameState, type PlayerState, type RoundResult, type TrickState } from "../types/types";
+import {
+  DECK_LENGTH,
+  MIN_PLAYERS,
+  MAX_PLAYERS,
+  type GameState,
+  type PlayerState,
+  type RoundResult,
+  type TrickState,
+} from "../types/types";
 
 /**
  * Deals cards to all players for a new round.
@@ -11,7 +19,9 @@ export function dealCards(players: PlayerState[]): {
   startingPlayerIndex: number;
 } {
   if (players.length < MIN_PLAYERS || players.length > MAX_PLAYERS) {
-    throw new Error(`Unsupported player count: ${players.length}. Must be ${MIN_PLAYERS}, ${MIN_PLAYERS + 1}, or ${MAX_PLAYERS}.`);
+    throw new Error(
+      `Unsupported player count: ${players.length}. Must be ${MIN_PLAYERS}, ${MIN_PLAYERS + 1}, or ${MAX_PLAYERS}.`,
+    );
   }
   const cardsEach = DECK_LENGTH / players.length;
 
@@ -23,7 +33,7 @@ export function dealCards(players: PlayerState[]): {
   }));
 
   const startingPlayerIndex = updatedPlayers.findIndex((p) =>
-    p.hand.includes(0)
+    p.hand.includes(0),
   );
 
   if (startingPlayerIndex === -1) {
@@ -40,11 +50,14 @@ export function dealCards(players: PlayerState[]): {
  */
 export function calculateRoundScores(
   roundNumber: number,
-  players: PlayerState[]
+  players: PlayerState[],
 ): RoundResult {
   return {
     round: roundNumber,
-    scores: players.map((p) => ({ playerId: p.id, tricksTaken: p.tricksTakenPerRound })),
+    scores: players.map((p) => ({
+      playerId: p.id,
+      tricksTaken: p.tricksTakenPerRound,
+    })),
   };
 }
 
@@ -53,7 +66,7 @@ export function calculateRoundScores(
  * Works after any round (partial or complete) to show current leaders.
  * Can be called after each round for leaderboard updates,
  * or after the final round for the podium (top 3).
- * 
+ *
  * @param players - All players in the game
  * @param roundResults - Round results available so far
  * @param topN - Number of top players to return (default: 3 for medals)
@@ -61,7 +74,7 @@ export function calculateRoundScores(
 export function calculateRoundWinners(
   players: PlayerState[],
   roundResults: RoundResult[],
-  topN: number = 3
+  topN: number = 3,
 ): { playerId: string; name: string; totalTricksTaken: number }[] {
   const totals = calculateTricksTakenPerPlayer(players, roundResults);
 
@@ -72,7 +85,10 @@ export function calculateRoundWinners(
   return totals.slice(0, topN);
 }
 
-function calculateTricksTakenPerPlayer(players: PlayerState[], roundResults: RoundResult[]) {
+function calculateTricksTakenPerPlayer(
+  players: PlayerState[],
+  roundResults: RoundResult[],
+) {
   return players.map((p) => {
     const totalTricksTaken = roundResults.reduce((sum, round) => {
       const score = round.scores.find((s) => s.playerId === p.id);
@@ -81,4 +97,3 @@ function calculateTricksTakenPerPlayer(players: PlayerState[], roundResults: Rou
     return { playerId: p.id, name: p.name, totalTricksTaken };
   });
 }
-

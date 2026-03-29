@@ -46,7 +46,13 @@ export function scheduleBotTurns(
           const updatedState = engine.getGameState();
           roomManager.broadcastGameState(room, updatedState);
           // Chain: check if the new leader is also a bot
-          scheduleBotTurns(gameId, engine, room, roomManager, connectionManager);
+          scheduleBotTurns(
+            gameId,
+            engine,
+            room,
+            roomManager,
+            connectionManager,
+          );
         }
         return;
       }
@@ -85,7 +91,13 @@ export function scheduleBotTurns(
             state: sanitizeStateForPlayer(updatedState, pid),
           }));
         }
-        scheduleBotTurns(gameId, engine, updatedRoom, roomManager, connectionManager);
+        scheduleBotTurns(
+          gameId,
+          engine,
+          updatedRoom,
+          roomManager,
+          connectionManager,
+        );
         return;
       }
 
@@ -97,13 +109,25 @@ export function scheduleBotTurns(
           hasSpecialPower: trick.winnerHasSpecialPower ?? false,
           state: sanitizeStateForPlayer(updatedState, pid),
         }));
-        scheduleBotTurns(gameId, engine, updatedRoom, roomManager, connectionManager);
+        scheduleBotTurns(
+          gameId,
+          engine,
+          updatedRoom,
+          roomManager,
+          connectionManager,
+        );
         return;
       }
 
       // Normal card played, advance
       roomManager.broadcastGameState(updatedRoom, updatedState);
-      scheduleBotTurns(gameId, engine, updatedRoom, roomManager, connectionManager);
+      scheduleBotTurns(
+        gameId,
+        engine,
+        updatedRoom,
+        roomManager,
+        connectionManager,
+      );
     } catch (err) {
       console.error(`[BotScheduler] Error for game ${gameId}:`, err);
     }

@@ -65,7 +65,13 @@ export async function routeMessage(
           const engine = gameRegistry.getGame(gameId);
           const room = roomManager.getRoom(gameId);
           if (engine && room) {
-            scheduleBotTurns(gameId, engine, room, roomManager, connectionManager);
+            scheduleBotTurns(
+              gameId,
+              engine,
+              room,
+              roomManager,
+              connectionManager,
+            );
           }
         }
         break;
@@ -117,7 +123,13 @@ export async function routeMessage(
               state: sanitizeStateForPlayer(state, pid),
             }));
           }
-          scheduleBotTurns(gameId, engine, room, roomManager, connectionManager);
+          scheduleBotTurns(
+            gameId,
+            engine,
+            room,
+            roomManager,
+            connectionManager,
+          );
           break;
         }
 
@@ -133,10 +145,22 @@ export async function routeMessage(
           if (state.awaitingLeaderSelection) {
             const currentPlayer = state.players[state.currentPlayerIndex];
             if (currentPlayer?.isBot) {
-              scheduleBotTurns(gameId, engine, room, roomManager, connectionManager);
+              scheduleBotTurns(
+                gameId,
+                engine,
+                room,
+                roomManager,
+                connectionManager,
+              );
             }
           } else {
-            scheduleBotTurns(gameId, engine, room, roomManager, connectionManager);
+            scheduleBotTurns(
+              gameId,
+              engine,
+              room,
+              roomManager,
+              connectionManager,
+            );
           }
           break;
         }

@@ -25,7 +25,9 @@ async function main(): Promise<void> {
       console.log(`📍 Using DATABASE_URL`);
       sql = postgres(databaseUrl);
     } else {
-      throw new Error("DATABASE_URL not set. Please provide connection parameters from the environment (e.g. by using .env configuration).");
+      throw new Error(
+        "DATABASE_URL not set. Please provide connection parameters from the environment (e.g. by using .env configuration).",
+      );
     }
 
     // Test connection
@@ -58,7 +60,7 @@ async function main(): Promise<void> {
 
     const createdTables = tables.map((t: any) => t.table_name);
     const allTablesCreated = expectedTables.every((t) =>
-      createdTables.includes(t)
+      createdTables.includes(t),
     );
 
     console.log(`\nTables created: ${createdTables.join(", ")}`);
