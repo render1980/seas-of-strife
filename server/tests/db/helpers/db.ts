@@ -1,12 +1,5 @@
-import { initDatabase, getDb, closeDatabase } from "../../../src/db/connection";
-import { schema } from "../../../src/db/schema";
+import { getDb } from "../../../src/db/connection";
 import type { GameState, PlayerState } from "../../../src/types/types";
-
-export async function setupTestDb(): Promise<void> {
-  initDatabase();
-  const sql = getDb();
-  await sql.unsafe(schema);
-}
 
 export async function truncateAllTables(): Promise<void> {
   const sql = getDb();
@@ -17,7 +10,7 @@ export async function truncateAllTables(): Promise<void> {
   `;
 }
 
-export { closeDatabase, getDb };
+export { getDb };
 
 export function makePlayers(n: number): PlayerState[] {
   return Array.from({ length: n }, (_, i) => ({

@@ -1,16 +1,12 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
+import { beforeEach, describe, expect, it } from "bun:test";
 import {
   handleLogin,
   handleLogout,
 } from "../../src/server/auth/handlers";
 import { SessionStore } from "../../src/server/auth/sessions";
-import { closeDatabase, getDb, setupTestDb, truncateAllTables } from "./helpers/db";
+import { getDb, truncateAllTables } from "./helpers/db";
 
-// handlers.ts imports the gameRepository singleton which calls getDb() lazily,
-// so initialising the DB in beforeAll is sufficient — no module-level DB access occurs.
-beforeAll(setupTestDb);
 beforeEach(truncateAllTables);
-afterAll(closeDatabase);
 
 describe("handlers -> GameRepository -> Postgres", () => {
   describe("handleLogin", () => {

@@ -1,16 +1,12 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
+import { beforeEach, describe, expect, it } from "bun:test";
 import { GameRepository } from "../../src/db/repositories/GameRepository";
 import { GameRegistry } from "../../src/game/GameRegistry";
 import {
-  closeDatabase,
   makePlayers,
-  setupTestDb,
   truncateAllTables,
 } from "./helpers/db";
 
-beforeAll(setupTestDb);
 beforeEach(truncateAllTables);
-afterAll(closeDatabase);
 
 describe("GameRegistry -> GameRepository -> Postgres", () => {
   it("createGame persists the initial state to the database", async () => {

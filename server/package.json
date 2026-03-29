@@ -7,7 +7,7 @@
     "init-db": "bun run scripts/init-db.ts",
     "dev": "bun --watch index.ts",
     "fmt": "npx prettier --write '**/*.ts'",
-    "test:db": "bun run scripts/create-test-db.ts && DATABASE_URL=postgres://postgres:postgres@localhost:5432/seas_of_strife_test bun test tests/db/; code=$?; bun run scripts/drop-test-db.ts; exit $code"
+    "test:db": "bun run scripts/create-test-db.ts && DATABASE_URL=postgres://postgres:postgres@localhost:5432/seas_of_strife_test bun test --preload ./tests/db/helpers/setup.ts tests/db/; code=$?; bun run scripts/drop-test-db.ts; exit $code"
   },
   "dependencies": {
     "postgres": "^3.4"

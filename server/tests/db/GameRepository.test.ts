@@ -1,18 +1,14 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
+import { beforeEach, describe, expect, it } from "bun:test";
 import { GameRepository } from "../../src/db/repositories/GameRepository";
 import {
-  closeDatabase,
   getDb,
   makeGameState,
-  setupTestDb,
   truncateAllTables,
 } from "./helpers/db";
 
 const repo = new GameRepository();
 
-beforeAll(setupTestDb);
 beforeEach(truncateAllTables);
-afterAll(closeDatabase);
 
 describe("GameRepository -> Postgres", () => {
   // ---------------------------------------------------------------------------
