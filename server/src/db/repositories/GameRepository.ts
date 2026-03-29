@@ -40,7 +40,11 @@ export class GameRepository {
         return null;
       }
 
-      const gameState: GameState = JSON.parse(result[0].game_state);
+      // postgres.js returns JSONB columns as parsed JS objects, not strings.
+      // Support both to be safe against driver configuration differences.
+      const raw = result[0].game_state as unknown;
+      const gameState: GameState =
+        typeof raw === "string" ? JSON.parse(raw) : (raw as GameState);
 
       if (
         !gameState.gameId ||
