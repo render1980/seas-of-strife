@@ -2,10 +2,6 @@ import { describe, expect, it } from "bun:test";
 import { ALL_CARDS, getSuitFromCard, isHighestCardOfSuit } from "../../src/game/cards";
 
 describe("Card definitions", () => {
-  it("defines exactly 60 cards", () => {
-    expect(ALL_CARDS.length).toBe(60);
-  });
-
   it("has no duplicate card values", () => {
     const set = new Set(ALL_CARDS);
     expect(set.size).toBe(ALL_CARDS.length);

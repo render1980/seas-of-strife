@@ -1,6 +1,10 @@
-import { describe, it, expect } from "bun:test";
-import { calculateTrickTaker, getValidCards, validateCardPlay } from "../../src/game/trick";
-import type { GamePhase, GameState, PlayedCard } from "../../src/types/types";
+import { describe, expect, it } from "bun:test";
+import {
+  calculateTrickTaker,
+  getValidCards,
+  validateCardPlay,
+} from "../../src/game/trick";
+import type { GameState, PlayedCard } from "../../src/types/types";
 
 // ---------------------------------------------------------------------------
 // Trick Resolution
@@ -66,7 +70,10 @@ describe("calculate trick winner", () => {
 });
 
 describe("validateCardPlay", () => {
-  function makeState(hand0: number[], trickCards: PlayedCard[] = []): GameState {
+  function makeState(
+    hand0: number[],
+    trickCards: PlayedCard[] = [],
+  ): GameState {
     return {
       gameId: 1,
       phase: "trick-playing",
@@ -82,10 +89,17 @@ describe("validateCardPlay", () => {
     };
   }
 
-  it("allows any card when trick is empty", () => {
+  it("allows any card when trick is empty (not the first trick)", () => {
+    // tricksTaken > 0 means at least one trick has been resolved — not the first trick
     const state = makeState([0, 11, 21]);
-    expect(validateCardPlay("p0", 0, state).valid).toBe(true);
-    expect(validateCardPlay("p0", 11, state).valid).toBe(true);
+    const laterState: GameState = {
+      ...state,
+      players: state.players.map((p, i) =>
+        i === 0 ? { ...p, tricksTaken: 1 } : p,
+      ),
+    };
+    expect(validateCardPlay("p0", 0, laterState).valid).toBe(true);
+    expect(validateCardPlay("p0", 11, laterState).valid).toBe(true);
   });
 
   it("rejects card not in hand", () => {
@@ -96,8 +110,8 @@ describe("validateCardPlay", () => {
   it("enforces suit matching when player has matching suit", () => {
     // Trick started with orange card; p0 has an orange card and a red card
     const state = makeState([5, 11], [{ playerId: "p1", card: 3 }]);
-    expect(validateCardPlay("p0", 5, state).valid).toBe(true);   // orange ✓
-    expect(validateCardPlay("p0", 11, state).valid).toBe(false);  // red ✗
+    expect(validateCardPlay("p0", 5, state).valid).toBe(true); // orange ✓
+    expect(validateCardPlay("p0", 11, state).valid).toBe(false); // red ✗
   });
 
   it("allows any card when player has no matching suit", () => {
@@ -115,7 +129,7 @@ describe("validateCardPlay", () => {
   it("allows matching either suit when two suits in trick", () => {
     // Orange + red already played; p0 has orange and red
     const trickCards: PlayedCard[] = [
-      { playerId: "ignored", card: 3  },  // orange
+      { playerId: "ignored", card: 3 }, // orange
       { playerId: "ignored2", card: 11 }, // red
     ];
     const state = makeState([5, 11], trickCards);
@@ -125,12 +139,18 @@ describe("validateCardPlay", () => {
 });
 
 describe("getValidCards", () => {
-  it("returns full hand when trick is empty", () => {
+  it("returns full hand when trick is empty (non-first trick)", () => {
     const state: GameState = {
       gameId: 1,
       phase: "trick-playing",
       players: [
-        { id: "p0", name: "P0", isBot: false, hand: [0, 11, 21], tricksTaken: 0 },
+        {
+          id: "p0",
+          name: "P0",
+          isBot: false,
+          hand: [0, 11, 21],
+          tricksTaken: 1,
+        },
       ],
       currentRound: 1,
       currentPlayerIndex: 0,
@@ -139,5 +159,99 @@ describe("getValidCards", () => {
       awaitingLeaderSelection: false,
     };
     expect(getValidCards("p0", state)).toEqual([0, 11, 21]);
+  });
+});
+
+describe("first trick of the game", () => {
+  function makeGameOpenState(
+    p0Hand: number[],
+    p1Hand: number[],
+    leadIdx = 0,
+  ): GameState {
+    return {
+      gameId: 1,
+      phase: "trick-playing",
+      players: [
+        { id: "p0", name: "P0", isBot: false, hand: p0Hand, tricksTaken: 0 },
+        { id: "p1", name: "P1", isBot: false, hand: p1Hand, tricksTaken: 0 },
+      ],
+      currentRound: 1,
+      currentPlayerIndex: leadIdx,
+      currentTrick: { playedCards: [], startingPlayerIndex: leadIdx },
+      roundResults: [],
+      awaitingLeaderSelection: false,
+    };
+  }
+
+  it("restricts the holder of card 0 to only card 0 on the very first play", () => {
+    const state = makeGameOpenState([0, 11, 21], [12, 13]);
+    expect(getValidCards("p0", state)).toEqual([0]);
+  });
+
+  it("returns empty for a player without card 0 when it is the first play", () => {
+    // p0 leads but doesn't hold card 0 — invalid configuration, no valid cards
+    const state = makeGameOpenState([11, 21], [0, 12]);
+    expect(getValidCards("p0", state)).toEqual([]);
+  });
+
+  it("only card 0 is valid to play via validateCardPlay on the first play", () => {
+    const state = makeGameOpenState([0, 11], [12, 13]);
+    expect(validateCardPlay("p0", 0, state).valid).toBe(true);
+    expect(validateCardPlay("p0", 11, state).valid).toBe(false);
+  });
+
+  it("normal rules apply after card 0 has been played", () => {
+    // After card 0 is played, p1 follows normally
+    const state: GameState = {
+      gameId: 1,
+      phase: "trick-playing",
+      players: [
+        { id: "p0", name: "P0", isBot: false, hand: [11, 21], tricksTaken: 0 },
+        { id: "p1", name: "P1", isBot: false, hand: [12, 13], tricksTaken: 0 },
+      ],
+      currentRound: 1,
+      currentPlayerIndex: 1,
+      currentTrick: {
+        playedCards: [{ playerId: "p0", card: 0 }],
+        startingPlayerIndex: 0,
+      },
+      roundResults: [],
+      awaitingLeaderSelection: false,
+    };
+    // p1 has no orange cards (12, 13 are red), so any card is valid
+    expect(getValidCards("p1", state)).toEqual([12, 13]);
+  });
+
+  it("first-trick restriction should apply in later rounds", () => {
+    function withState(hand: number[]): GameState {
+      return {
+        gameId: 1,
+        phase: "trick-playing",
+        players: [
+          {
+            id: "p0",
+            name: "P0",
+            isBot: false,
+            hand,
+            tricksTaken: 0,
+          },
+        ],
+        currentRound: 2,
+        currentPlayerIndex: 0,
+        currentTrick: { playedCards: [], startingPlayerIndex: 0 },
+        roundResults: [
+          { round: 1, scores: [{ playerId: "p0", tricksTaken: 5 }] },
+        ],
+        awaitingLeaderSelection: false,
+      };
+    }
+
+    const stateWoZero = withState([11, 21]);
+    const validCardsWoZero = getValidCards("p0", stateWoZero);
+    expect(validCardsWoZero).toEqual([]);
+
+    const stateWithZero = withState([11, 21, 0]);
+    const validCardsWithZero = getValidCards("p0", stateWithZero);
+    expect(validCardsWithZero).toEqual([0]);
   });
 });

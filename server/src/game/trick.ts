@@ -97,10 +97,7 @@ export function calculateTrickTaker(
  * Once a second suit enters the trick (because someone had no matching cards),
  * subsequent players must follow either the leading suit OR the new suit.
  */
-function getFollowSuitCards(
-  player: PlayerState,
-  state: GameState,
-): number[] {
+function getFollowSuitCards(player: PlayerState, state: GameState): number[] {
   const { playedCards } = state.currentTrick;
 
   // Collect the suits that are "in play" in this trick
@@ -124,6 +121,15 @@ function getFollowSuitCards(
 export function getValidCards(playerId: string, state: GameState): number[] {
   const player = state.players.find((p) => p.id === playerId);
   if (!player) return [];
+
+  // First trick of every round: the player holding card 0 must play with it.
+  const isFirstTrickOpening =
+    state.players.every((p) => p.tricksTaken === 0) &&
+    state.currentTrick.playedCards.length === 0;
+
+  if (isFirstTrickOpening) {
+    return player.hand.includes(0) ? [0] : [];
+  }
 
   // First card of trick — any card is valid
   if (state.currentTrick.playedCards.length === 0) {
