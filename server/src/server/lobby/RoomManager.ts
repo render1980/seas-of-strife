@@ -139,7 +139,7 @@ export class RoomManager {
     // Build player list, fill bots to reach MIN_PLAYERS
     const players: PlayerState[] = [];
     for (const [id, name] of room.playerNames) {
-      players.push({ id, name, isBot: false, hand: [], tricksTaken: 0 });
+      players.push({ id, name, isBot: false, hand: [], tricksTakenPerRound: 0 });
     }
     let botNum = 1;
     while (players.length < 4) {
@@ -149,7 +149,7 @@ export class RoomManager {
         name: `Bot ${botNum}`,
         isBot: true,
         hand: [],
-        tricksTaken: 0,
+        tricksTakenPerRound: 0,
       });
       botNum++;
     }

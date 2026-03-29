@@ -44,46 +44,55 @@ export function calculateTrickTaker(
     throw new Error("Cannot resolve an empty trick");
   }
 
-  // Group cards by suit
-  const suitGroups = new Map<string, PlayedCard[]>();
-  for (const pc of playedCards) {
-    const suit = getSuitFromCard(pc.card);
-    if (!suitGroups.has(suit)) suitGroups.set(suit, []);
-    suitGroups.get(suit)!.push(pc);
+  const suitGroups = groupCardsBySuit(playedCards);
+  let maxCount = findMaxCountAmongPlayedSuits(suitGroups);
+  const candidateCards: PlayedCard[] = collectCandidateCards(suitGroups, maxCount);
+  const theHighestCardAmongTiedSuits = candidateCards.reduce((best, pc) =>
+    pc.card > best.card ? pc : best,
+  );
+
+  const takerIndex = playerIds.indexOf(theHighestCardAmongTiedSuits.playerId);
+  if (takerIndex === -1) {
+    throw new Error(
+      `Taker playerId "${theHighestCardAmongTiedSuits.playerId}" not found in playerIds`,
+    );
   }
 
-  // Find maximum number of cards in a single suit
-  let maxCount = 0;
-  for (const cards of suitGroups.values()) {
-    if (cards.length > maxCount) maxCount = cards.length;
-  }
+  return {
+    trickTakerIdx: takerIndex,
+    winnerId: theHighestCardAmongTiedSuits.playerId,
+    winningCard: theHighestCardAmongTiedSuits.card,
+    hasSpecialPower: isHighestCardOfSuit(theHighestCardAmongTiedSuits.card),
+  };
+}
 
-  // Collect cards from all suits that have that maximum count (tied suits)
+// Collect cards from all suits that have that maximum count (tied suits)
+function collectCandidateCards(suitGroups: Map<string, PlayedCard[]>, maxCount: number) {
   const candidateCards: PlayedCard[] = [];
   for (const cards of suitGroups.values()) {
     if (cards.length === maxCount) {
       candidateCards.push(...cards);
     }
   }
+  return candidateCards;
+}
 
-  // The highest card value among candidates wins
-  const winner = candidateCards.reduce((best, pc) =>
-    pc.card > best.card ? pc : best,
-  );
-
-  const takerIndex = playerIds.indexOf(winner.playerId);
-  if (takerIndex === -1) {
-    throw new Error(
-      `Winner playerId "${winner.playerId}" not found in playerIds`,
-    );
+function findMaxCountAmongPlayedSuits(suitGroups: Map<string, PlayedCard[]>) {
+  let maxCount = 0;
+  for (const playedCardsBySuit of suitGroups.values()) {
+    if (playedCardsBySuit.length > maxCount) maxCount = playedCardsBySuit.length;
   }
+  return maxCount;
+}
 
-  return {
-    trickTakerIdx: takerIndex,
-    winnerId: winner.playerId,
-    winningCard: winner.card,
-    hasSpecialPower: isHighestCardOfSuit(winner.card),
-  };
+function groupCardsBySuit(playedCards: PlayedCard[]) {
+  const suitGroups = new Map<string, PlayedCard[]>();
+  for (const pc of playedCards) {
+    const suit = getSuitFromCard(pc.card);
+    if (!suitGroups.has(suit)) suitGroups.set(suit, []);
+    suitGroups.get(suit)!.push(pc);
+  }
+  return suitGroups;
 }
 
 // ---------------------------------------------------------------------------
@@ -124,7 +133,7 @@ export function getValidCards(playerId: string, state: GameState): number[] {
 
   // First trick of every round: the player holding card 0 must play with it.
   const isFirstTrickOpening =
-    state.players.every((p) => p.tricksTaken === 0) &&
+    state.players.every((p) => p.tricksTakenPerRound === 0) &&
     state.currentTrick.playedCards.length === 0;
 
   if (isFirstTrickOpening) {
@@ -139,6 +148,11 @@ export function getValidCards(playerId: string, state: GameState): number[] {
   return getFollowSuitCards(player, state);
 }
 
+function isCurrentPlayerTurn(playerId: string, state: GameState): boolean {
+  const currentPlayer = state.players[state.currentPlayerIndex];
+  return currentPlayer?.id === playerId;
+}
+
 /**
  * Validates whether a specific card play is legal.
  */
@@ -147,9 +161,7 @@ export function validateCardPlay(
   card: number,
   state: GameState,
 ): ValidationResult {
-  // Check it is this player's turn
-  const currentPlayer = state.players[state.currentPlayerIndex];
-  if (!currentPlayer || currentPlayer.id !== playerId) {
+  if (!isCurrentPlayerTurn(playerId, state)) {
     return { valid: false, reason: `It is not ${playerId}'s turn` };
   }
 

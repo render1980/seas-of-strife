@@ -1,16 +1,16 @@
 import {
   type GameState,
-  type RoundWinner,
   type MoveResult,
   type PlayerState,
+  type RoundWinner,
   TOTAL_ROUNDS_PER_GAME,
 } from "../types/types";
+import { GameStateMachine } from "./GameStateMachine";
 import {
   calculateRoundScores,
   dealCards,
-  determineRoundWinners,
+  calculateRoundWinners,
 } from "./round";
-import { GameStateMachine } from "./GameStateMachine";
 import {
   calculateTrickTaker,
   createEmptyTrick,
@@ -27,12 +27,12 @@ export interface IPersistService {
   saveRoundResult(
     gameId: number,
     roundNumber: number,
-    roundResult: any
+    roundResult: any,
   ): Promise<void>;
   saveGameResults(
     gameId: number,
     realPlayerIds: string[],
-    winners: any[]
+    winners: any[],
   ): Promise<void>;
 }
 
@@ -200,7 +200,7 @@ export class GameEngine {
 
   getRoundWinners(): RoundWinner[] {
     const state = this.sm.getState();
-    return determineRoundWinners(state.players, state.roundResults);
+    return calculateRoundWinners(state.players, state.roundResults);
   }
 
   // ---------------------------------------------------------------------------
@@ -247,10 +247,10 @@ export class GameEngine {
       players.map((p) => p.id),
     );
 
-    // Update tricksTaken for the winner
+    // Update tricksTakenPerRound for the taker
     const updatedPlayers: PlayerState[] = players.map((p, i) =>
       i === trickResult.trickTakerIdx
-        ? { ...p, tricksTaken: p.tricksTaken + 1 }
+        ? { ...p, tricksTakenPerRound: p.tricksTakenPerRound + 1 }
         : p,
     );
 
@@ -317,7 +317,7 @@ export class GameEngine {
         await this.persistService.saveRoundResult(
           newState.gameId,
           currentRound,
-          roundResult
+          roundResult,
         );
       } catch (error) {
         console.error("Failed to save round result:", error);
@@ -333,15 +333,15 @@ export class GameEngine {
         const realPlayerIds = newState.players
           .filter((p) => !p.isBot)
           .map((p) => p.id);
-        const winners = determineRoundWinners(
+        const winners = calculateRoundWinners(
           newState.players,
-          newState.roundResults
+          newState.roundResults,
         );
         try {
           await this.persistService.saveGameResults(
             newState.gameId,
             realPlayerIds,
-            winners
+            winners,
           );
         } catch (error) {
           console.error("Failed to save game results:", error);
@@ -390,7 +390,8 @@ export class GameEngine {
     }
 
     // Pick a random card
-    const randomCard = validCards[Math.floor(Math.random() * validCards.length)];
+    const randomCard =
+      validCards[Math.floor(Math.random() * validCards.length)];
 
     return this.playCard(playerId, randomCard);
   }

@@ -14,7 +14,7 @@ export function sanitizeStateForPlayer(
     isBot: p.isBot,
     hand: p.id === playerId ? p.hand : [],
     handSize: p.hand.length,
-    tricksTaken: p.tricksTaken,
+    tricksTakenPerRound: p.tricksTakenPerRound,
   }));
 
   return {

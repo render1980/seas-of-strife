@@ -16,7 +16,7 @@ function makePlayers(count: number): PlayerState[] {
     name: `Player ${i}`,
     isBot: false,
     hand: [],
-    tricksTaken: 0,
+    tricksTakenPerRound: 0,
   }));
 }
 
@@ -40,8 +40,8 @@ describe("GameEngine", () => {
     engine.startGame();
 
     const gs = engine.getGameState();
-    const startingIdx = gs.currentPlayerIndex;
-    const card = gs.players[startingIdx]?.hand[0];
+    const startingIdx = gs.players.findIndex((p) => p.hand.includes(0));
+    const card = 0;
 
     if (card === undefined) {
       throw new Error("No card found in starting player's hand");
@@ -84,7 +84,7 @@ describe("GameEngine", () => {
     // After 4 cards played, trick should be resolved
     const endState = engine.getGameState();
     const totalTricksTaken = endState.players.reduce(
-      (s, p) => s + p.tricksTaken,
+      (s, p) => s + p.tricksTakenPerRound,
       0,
     );
 
@@ -139,7 +139,7 @@ describe("GameEngine", () => {
     expect(["trick-playing", "round-end", "game-end"]).toContain(phase);
     const totalTricksTaken = engine
       .getGameState()
-      .players.reduce((s, p) => s + p.tricksTaken, 0);
+      .players.reduce((s, p) => s + p.tricksTakenPerRound, 0);
     // After round 1 we expect either 15 current tricks or 0 (if round advanced)
     expect(totalTricksTaken).toBeGreaterThanOrEqual(0);
   });
@@ -148,7 +148,7 @@ describe("GameEngine", () => {
     // Use makePlayers(4) and fake a completed game state
     const players: PlayerState[] = makePlayers(4).map((p, i) => ({
       ...p,
-      tricksTaken: i, // player-0 has 0 tricks (winner)
+      tricksTakenPerRound: i, // player-0 has 0 tricks (winner)
     }));
     const state: GameState = {
       gameId: 99,

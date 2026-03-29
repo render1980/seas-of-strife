@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import { dealCards } from "../../src/game/round";
-import type { PlayerState } from "../../src/types/types";
+import { calculateRoundScores, calculateRoundWinners, dealCards } from "../../src/game/round";
+import type { PlayerState, RoundResult } from "../../src/types/types";
 
 function makePlayers(count: number): PlayerState[] {
   return Array.from({ length: count }, (_, i) => ({
@@ -8,7 +8,7 @@ function makePlayers(count: number): PlayerState[] {
     name: `Player ${i}`,
     isBot: false,
     hand: [],
-    tricksTaken: 0,
+    tricksTakenPerRound: 0,
   }));
 }
 
@@ -36,7 +36,7 @@ describe("dealCards", () => {
   it("starting player holds card 0", () => {
     const players = makePlayers(4);
     const { updatedPlayers, startingPlayerIndex } = dealCards(players);
-    expect(updatedPlayers[startingPlayerIndex].hand).toContain(0);
+    expect(updatedPlayers[startingPlayerIndex]!.hand).toContain(0);
   });
 
   it("no duplicate cards across hands", () => {
@@ -50,5 +50,31 @@ describe("dealCards", () => {
   it("throws for unsupported player counts", () => {
     expect(() => dealCards(makePlayers(3))).toThrow();
     expect(() => dealCards(makePlayers(7))).toThrow();
+  });
+});
+
+describe("calculateRoundScores", () => {
+  it("calculates scores based on tricks taken", () => {
+    const players = makePlayers(4).map((p, i) => ({ ...p, tricksTakenPerRound: i }));
+    const result = calculateRoundScores(1, players);
+    expect(result.round).toBe(1);
+    expect(result.scores).toEqual([
+      { playerId: "player-0", tricksTaken: 0 },
+      { playerId: "player-1", tricksTaken: 1 },
+      { playerId: "player-2", tricksTaken: 2 },
+      { playerId: "player-3", tricksTaken: 3 },
+    ]);
+  });  
+});
+
+describe("calculateRoundWinners", () => {
+  it("returns top N players ranked by tricks taken", () => {
+    const players = makePlayers(5).map((p, i) => ({ ...p, tricksTakenPerRound: i }));
+    const roundResults = [] as RoundResult[];
+    const winners = calculateRoundWinners(players, roundResults, 3);
+    expect(winners.length).toBe(3);
+    expect(winners[0]!.playerId).toBe("player-0");
+    expect(winners[1]!.playerId).toBe("player-1");
+    expect(winners[2]!.playerId).toBe("player-2");
   });
 });

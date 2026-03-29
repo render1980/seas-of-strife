@@ -3,7 +3,7 @@ import { DECK_LENGTH, MIN_PLAYERS, MAX_PLAYERS, type GameState, type PlayerState
 
 /**
  * Deals cards to all players for a new round.
- * Returns updated player states with fresh hands and zero tricksTaken.
+ * Returns updated player states with fresh hands and zero tricksTakenPerRound.
  * Also returns the player index who has card 0 (they open the first trick).
  */
 export function dealCards(players: PlayerState[]): {
@@ -19,7 +19,7 @@ export function dealCards(players: PlayerState[]): {
   const updatedPlayers: PlayerState[] = players.map((p, i) => ({
     ...p,
     hand: deck.slice(i * cardsEach, (i + 1) * cardsEach),
-    tricksTaken: 0,
+    tricksTakenPerRound: 0,
   }));
 
   const startingPlayerIndex = updatedPlayers.findIndex((p) =>
@@ -44,7 +44,7 @@ export function calculateRoundScores(
 ): RoundResult {
   return {
     round: roundNumber,
-    scores: players.map((p) => ({ playerId: p.id, tricksTaken: p.tricksTaken })),
+    scores: players.map((p) => ({ playerId: p.id, tricksTaken: p.tricksTakenPerRound })),
   };
 }
 
@@ -58,18 +58,12 @@ export function calculateRoundScores(
  * @param roundResults - Round results available so far
  * @param topN - Number of top players to return (default: 3 for medals)
  */
-export function determineRoundWinners(
+export function calculateRoundWinners(
   players: PlayerState[],
   roundResults: RoundResult[],
   topN: number = 3
 ): { playerId: string; name: string; totalTricksTaken: number }[] {
-  const totals = players.map((p) => {
-    const totalTricksTaken = roundResults.reduce((sum, round) => {
-      const score = round.scores.find((s) => s.playerId === p.id);
-      return sum + (score?.tricksTaken ?? 0);
-    }, 0);
-    return { playerId: p.id, name: p.name, totalTricksTaken };
-  });
+  const totals = calculateTricksTakenPerPlayer(players, roundResults);
 
   // Sort by tricks taken (ascending — fewest is best)
   totals.sort((a, b) => a.totalTricksTaken - b.totalTricksTaken);
@@ -77,3 +71,14 @@ export function determineRoundWinners(
   // Return top N
   return totals.slice(0, topN);
 }
+
+function calculateTricksTakenPerPlayer(players: PlayerState[], roundResults: RoundResult[]) {
+  return players.map((p) => {
+    const totalTricksTaken = roundResults.reduce((sum, round) => {
+      const score = round.scores.find((s) => s.playerId === p.id);
+      return sum + (score?.tricksTaken ?? 0);
+    }, 0);
+    return { playerId: p.id, name: p.name, totalTricksTaken };
+  });
+}
+

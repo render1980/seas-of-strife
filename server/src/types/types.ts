@@ -71,7 +71,7 @@ export interface PlayerState {
   name: string;
   isBot: boolean;
   hand: number[];
-  tricksTaken: number;
+  tricksTakenPerRound: number;
 }
 
 export interface GameState {

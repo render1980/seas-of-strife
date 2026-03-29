@@ -78,8 +78,8 @@ describe("validateCardPlay", () => {
       gameId: 1,
       phase: "trick-playing",
       players: [
-        { id: "p0", name: "P0", isBot: false, hand: hand0, tricksTaken: 0 },
-        { id: "p1", name: "P1", isBot: false, hand: [12, 13], tricksTaken: 0 },
+        { id: "p0", name: "P0", isBot: false, hand: hand0, tricksTakenPerRound: 0 },
+        { id: "p1", name: "P1", isBot: false, hand: [12, 13], tricksTakenPerRound: 0 },
       ],
       currentRound: 1,
       currentPlayerIndex: 0,
@@ -90,12 +90,12 @@ describe("validateCardPlay", () => {
   }
 
   it("allows any card when trick is empty (not the first trick)", () => {
-    // tricksTaken > 0 means at least one trick has been resolved — not the first trick
+    // tricksTakenPerRound > 0 means at least one trick has been resolved — not the first trick
     const state = makeState([0, 11, 21]);
     const laterState: GameState = {
       ...state,
       players: state.players.map((p, i) =>
-        i === 0 ? { ...p, tricksTaken: 1 } : p,
+        i === 0 ? { ...p, tricksTakenPerRound: 1 } : p,
       ),
     };
     expect(validateCardPlay("p0", 0, laterState).valid).toBe(true);
@@ -149,7 +149,7 @@ describe("getValidCards", () => {
           name: "P0",
           isBot: false,
           hand: [0, 11, 21],
-          tricksTaken: 1,
+          tricksTakenPerRound: 1,
         },
       ],
       currentRound: 1,
@@ -172,8 +172,8 @@ describe("first trick of the game", () => {
       gameId: 1,
       phase: "trick-playing",
       players: [
-        { id: "p0", name: "P0", isBot: false, hand: p0Hand, tricksTaken: 0 },
-        { id: "p1", name: "P1", isBot: false, hand: p1Hand, tricksTaken: 0 },
+        { id: "p0", name: "P0", isBot: false, hand: p0Hand, tricksTakenPerRound: 0 },
+        { id: "p1", name: "P1", isBot: false, hand: p1Hand, tricksTakenPerRound: 0 },
       ],
       currentRound: 1,
       currentPlayerIndex: leadIdx,
@@ -206,8 +206,8 @@ describe("first trick of the game", () => {
       gameId: 1,
       phase: "trick-playing",
       players: [
-        { id: "p0", name: "P0", isBot: false, hand: [11, 21], tricksTaken: 0 },
-        { id: "p1", name: "P1", isBot: false, hand: [12, 13], tricksTaken: 0 },
+        { id: "p0", name: "P0", isBot: false, hand: [11, 21], tricksTakenPerRound: 0 },
+        { id: "p1", name: "P1", isBot: false, hand: [12, 13], tricksTakenPerRound: 0 },
       ],
       currentRound: 1,
       currentPlayerIndex: 1,
@@ -233,7 +233,7 @@ describe("first trick of the game", () => {
             name: "P0",
             isBot: false,
             hand,
-            tricksTaken: 0,
+            tricksTakenPerRound: 0,
           },
         ],
         currentRound: 2,

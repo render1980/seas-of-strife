@@ -17,10 +17,12 @@ import type { GameState } from "../types/types";
 export class BotPlayer {
   static decideMove(playerId: string, state: GameState): number {
     const validCards = getValidCards(playerId, state);
-    if (validCards.length === 0) {
+    if (validCards.length < 1) {
       throw new Error(`Bot ${playerId} has no valid cards to play`);
     }
-    if (validCards.length === 1) return validCards[0];
+    if (validCards.length === 1) {
+      return validCards[0]!;
+    }
 
     const { playedCards } = state.currentTrick;
 

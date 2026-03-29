@@ -77,7 +77,7 @@ export interface SanitizedPlayer {
   isBot: boolean;
   hand: number[];  // own hand only; empty for others
   handSize: number;
-  tricksTaken: number;
+  tricksTakenPerRound: number;
 }
 
 export interface SanitizedGameState {
