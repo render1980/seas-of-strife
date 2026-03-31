@@ -4,7 +4,8 @@ import { GameRepository } from "../../src/db/repositories/GameRepository";
 import { SessionStore } from "../../src/server/auth/sessions";
 import { getDb, truncateAllTables } from "./helpers/db";
 
-const authHandler = new AuthHandler(new GameRepository());
+const sql = getDb();
+const authHandler = new AuthHandler(new GameRepository(sql));
 
 beforeEach(truncateAllTables);
 
@@ -28,7 +29,6 @@ describe("handlers -> GameRepository -> Postgres", () => {
       const store = new SessionStore();
       await authHandler.handleLogin({ login: "alice", password: "secret" }, store);
 
-      const sql = getDb();
       const rows = await sql`
         SELECT pp.id
         FROM player_profiles pp

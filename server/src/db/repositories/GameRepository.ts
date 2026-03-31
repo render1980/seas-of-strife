@@ -1,18 +1,19 @@
-import { getDb } from "../connection";
+import type postgres from "postgres";
 import type { GameState, RoundResult } from "../../types/types";
 
 /**
  * GameRepository handles all persistence for game state and results.
  */
 export class GameRepository {
+  constructor(private sql: postgres.Sql) {}
+
   /**
    * Save or update the complete game state.
    * Called after every trick.
    */
   async saveGameState(gameState: GameState): Promise<void> {
-    const sql = getDb();
 
-    await sql`
+    await this.sql`
       INSERT INTO games (game_id, game_state, phase, current_round)
       VALUES (${gameState.gameId}, ${JSON.stringify(gameState)}, ${gameState.phase}, ${gameState.currentRound})
       ON CONFLICT (game_id) 
@@ -29,10 +30,9 @@ export class GameRepository {
    * Returns null if not found or state is structurally invalid.
    */
   async loadGameState(gameId: number): Promise<GameState | null> {
-    const sql = getDb();
 
     try {
-      const result = await sql<[{ game_state: string }]>`
+      const result = await this.sql<[{ game_state: string }]>`
         SELECT game_state FROM games WHERE game_id = ${gameId}
       `;
 
@@ -71,7 +71,7 @@ export class GameRepository {
     roundNumber: number,
     roundResult: RoundResult,
   ): Promise<void> {
-    const sql = getDb();
+    const sql = this.sql;
 
     // Get the internal game ID from games table
     const gameRecord = await sql<[{ id: number }]>`
@@ -103,7 +103,7 @@ export class GameRepository {
       totalTricksTaken: number;
     }>,
   ): Promise<void> {
-    const sql = getDb();
+    const sql = this.sql;
 
     // Get the internal game ID
     const gameRecord = await sql<[{ id: number }]>`
@@ -205,8 +205,7 @@ export class GameRepository {
     password_hash: string;
     password_salt: string;
   } | null> {
-    const sql = getDb();
-    const rows = await sql<
+    const rows = await this.sql<
       [{ id: number; password_hash: string; password_salt: string }]
     >`
       SELECT id, password_hash, password_salt FROM users WHERE login = ${login}
@@ -219,8 +218,7 @@ export class GameRepository {
     passwordHash: string,
     passwordSalt: string,
   ): Promise<number> {
-    const sql = getDb();
-    const result = await sql<[{ id: number }]>`
+    const result = await this.sql<[{ id: number }]>`
       INSERT INTO users (login, password_hash, password_salt)
       VALUES (${login}, ${passwordHash}, ${passwordSalt})
       RETURNING id
@@ -229,8 +227,7 @@ export class GameRepository {
   }
 
   async createPlayerProfile(userId: number): Promise<void> {
-    const sql = getDb();
-    await sql`
+    await this.sql`
       INSERT INTO player_profiles (user_id) VALUES (${userId})
     `;
   }
@@ -239,8 +236,7 @@ export class GameRepository {
    * Delete a game (after archiving if needed).
    */
   async deleteGame(gameId: number): Promise<void> {
-    const sql = getDb();
-    await sql`
+    await this.sql`
       DELETE FROM games WHERE game_id = ${gameId}
     `;
   }
@@ -256,9 +252,7 @@ export class GameRepository {
       createdAt: string;
     }>
   > {
-    const sql = getDb();
-
-    const results = await sql<
+    const results = await this.sql<
       Array<{
         game_id: number;
         medal: string | null;

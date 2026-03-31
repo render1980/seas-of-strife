@@ -15,8 +15,14 @@ try {
 
   await sql`CREATE DATABASE seas_of_strife_test`;
   console.log("Test database created.");
-} catch (error) {
-  console.error("\n❌ Error initializing database:");
-  console.error(error);
-  process.exit(1);
+} catch (error: any) {
+  if (error?.code === "42P04") {
+    console.log("Test database already exists, continuing.");
+  } else {
+    console.error("\n❌ Error initializing database:");
+    console.error(error);
+    process.exit(1);
+  }
+} finally {
+  await sql!.end();
 }

@@ -12,10 +12,10 @@ import { createWsHandlers, type WsData } from "./src/server/ws/handler";
 // Bootstrap
 // ---------------------------------------------------------------------------
 
-initDatabase();
+const sql = initDatabase();
 
 const sessionStore = new SessionStore();
-const gameRepository = new GameRepository();
+const gameRepository = new GameRepository(sql);
 const authHandler = new AuthHandler(gameRepository);
 const gameRegistry = new GameRegistry(gameRepository);
 const connectionManager = new ConnectionManager(gameRegistry);

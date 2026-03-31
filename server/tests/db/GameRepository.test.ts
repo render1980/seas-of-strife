@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, it } from "bun:test";
 import { GameRepository } from "../../src/db/repositories/GameRepository";
 import { getDb, makeGameState, truncateAllTables } from "./helpers/db";
 
-const repo = new GameRepository();
+let sql = getDb()
+const repo = new GameRepository(sql);
 
 beforeEach(truncateAllTables);
 
@@ -35,7 +36,6 @@ describe("GameRepository -> Postgres", () => {
       const userId = await repo.createUser("alice", "h", "s");
       await repo.createPlayerProfile(userId);
 
-      const sql = getDb();
       const rows = await sql<
         Array<{ user_id: number; gold_medals: number }>
       >`SELECT user_id, gold_medals FROM player_profiles WHERE user_id = ${userId}`;
@@ -78,7 +78,6 @@ describe("GameRepository -> Postgres", () => {
     });
 
     it("returns null when stored state is missing required fields", async () => {
-      const sql = getDb();
       await sql`
         INSERT INTO games (game_id, game_state, phase, current_round)
         VALUES (42, ${JSON.stringify({ invalid: true })}, 'waiting', 0)
@@ -103,7 +102,6 @@ describe("GameRepository -> Postgres", () => {
         ],
       });
 
-      const sql = getDb();
       const rows = await sql`SELECT round_number FROM game_rounds`;
       expect(rows.length).toBe(1);
       expect(rows[0]!.round_number).toBe(1);
@@ -167,7 +165,6 @@ describe("GameRepository -> Postgres", () => {
         ],
       );
 
-      const sql = getDb();
       const profiles = await sql<
         Array<{
           login: string;
@@ -208,7 +205,6 @@ describe("GameRepository -> Postgres", () => {
         ],
       );
 
-      const sql = getDb();
       const profile = await sql<Array<{ total_games_played: number }>>`
         SELECT total_games_played FROM player_profiles WHERE user_id = ${player4Id}
       `;
@@ -253,7 +249,6 @@ describe("GameRepository -> Postgres", () => {
       const userId = await repo.createUser("alice", "h", "s");
       await repo.createPlayerProfile(userId);
 
-      const sql = getDb();
       await sql`
         INSERT INTO player_game_results (user_id, game_id, medal, total_tricks_taken)
         VALUES

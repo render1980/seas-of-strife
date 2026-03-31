@@ -1,13 +1,15 @@
 import { beforeEach, describe, expect, it } from "bun:test";
 import { GameRepository } from "../../src/db/repositories/GameRepository";
 import { GameRegistry } from "../../src/game/GameRegistry";
-import { makePlayers, truncateAllTables } from "./helpers/db";
+import { getDb, makePlayers, truncateAllTables } from "./helpers/db";
+
+let sql = getDb()
 
 beforeEach(truncateAllTables);
 
 describe("GameRegistry -> GameRepository -> Postgres", () => {
   it("createGame persists the initial state to the database", async () => {
-    const repo = new GameRepository();
+    const repo = new GameRepository(sql);
     const registry = new GameRegistry(repo);
 
     const engine = await registry.createGame(1, makePlayers(4));
@@ -22,7 +24,7 @@ describe("GameRegistry -> GameRepository -> Postgres", () => {
   });
 
   it("createGame throws on a duplicate gameId", async () => {
-    const repo = new GameRepository();
+    const repo = new GameRepository(sql);
     const registry = new GameRegistry(repo);
 
     await registry.createGame(1, makePlayers(4));
@@ -31,7 +33,7 @@ describe("GameRegistry -> GameRepository -> Postgres", () => {
   });
 
   it("getOrLoadGame returns the same in-memory instance on cache hit", async () => {
-    const repo = new GameRepository();
+    const repo = new GameRepository(sql);
     const registry = new GameRegistry(repo);
 
     const engine = await registry.createGame(1, makePlayers(4));
@@ -41,7 +43,7 @@ describe("GameRegistry -> GameRepository -> Postgres", () => {
   });
 
   it("getOrLoadGame loads from DB when game is not in memory (fresh registry)", async () => {
-    const repo = new GameRepository();
+    const repo = new GameRepository(sql);
     const registry1 = new GameRegistry(repo);
     await registry1.createGame(1, makePlayers(4));
 
@@ -55,14 +57,14 @@ describe("GameRegistry -> GameRepository -> Postgres", () => {
   });
 
   it("getOrLoadGame returns null for a non-existent game", async () => {
-    const repo = new GameRepository();
+    const repo = new GameRepository(sql);
     const registry = new GameRegistry(repo);
 
     expect(await registry.getOrLoadGame(999)).toBeNull();
   });
 
   it("removeGame evicts from memory but game remains in DB for fresh registries", async () => {
-    const repo = new GameRepository();
+    const repo = new GameRepository(sql);
     const registry1 = new GameRegistry(repo);
     await registry1.createGame(1, makePlayers(4));
 

@@ -9,8 +9,10 @@ import { afterAll, beforeAll } from "bun:test";
 import { initDatabase, getDb, closeDatabase } from "../../../src/db/connection";
 import { schema } from "../../../src/db/schema";
 
+// Init at module level so getDb() works in test file top-level code.
+initDatabase();
+
 beforeAll(async () => {
-  initDatabase();
   const sql = getDb();
   await sql.unsafe(schema);
 });
