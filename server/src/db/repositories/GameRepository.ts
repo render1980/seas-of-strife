@@ -280,6 +280,3 @@ export class GameRepository {
     }));
   }
 }
-
-// Singleton instance
-export const gameRepository = new GameRepository();

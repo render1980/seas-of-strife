@@ -1,74 +1,82 @@
-import { gameRepository } from "../../db/repositories/GameRepository";
+import type { GameRepository } from "../../db/repositories/GameRepository";
 import type { SessionStore } from "./sessions";
 
-/**
- * Handle POST /api/login.
- * Creates user if not found, validates password if exists.
- * Returns { token, login } on success.
- */
-export async function handleLogin(
-  body: { login?: string; password?: string },
-  sessionStore: SessionStore,
-): Promise<Response> {
-  const { login, password } = body;
+export class AuthHandler {
+  private gameRepository: GameRepository;
 
-  if (!login || !password) {
-    return Response.json(
-      { error: "login and password are required" },
-      { status: 400 },
-    );
+  constructor(gameRepository: GameRepository) {
+    this.gameRepository = gameRepository;
   }
 
-  if (login.length > 50 || password.length > 200) {
-    return Response.json(
-      { error: "login or password too long" },
-      { status: 400 },
-    );
-  }
+  /**
+   * Handle POST /api/login.
+   * Creates user if not found, validates password if exists.
+   * Returns { token, login } on success.
+   */
+  async handleLogin(
+    body: { login?: string; password?: string },
+    sessionStore: SessionStore,
+  ): Promise<Response> {
+    const { login, password } = body;
 
-  const existing = await gameRepository.findUserByLogin(login);
-
-  if (existing) {
-    // Validate password
-    const hash = await hashPassword(password, existing.password_salt);
-    if (hash !== existing.password_hash) {
-      return Response.json({ error: "Invalid password" }, { status: 401 });
-    }
-
-    try {
-      const token = sessionStore.createSession(existing.id, login);
-      return Response.json({ token, login });
-    } catch {
+    if (!login || !password) {
       return Response.json(
-        { error: "This login is already in use in another session" },
-        { status: 409 },
+        { error: "login and password are required" },
+        { status: 400 },
       );
     }
+
+    if (login.length > 50 || password.length > 200) {
+      return Response.json(
+        { error: "login or password too long" },
+        { status: 400 },
+      );
+    }
+
+    const existing = await this.gameRepository.findUserByLogin(login);
+
+    if (existing) {
+      // Validate password
+      const hash = await hashPassword(password, existing.password_salt);
+      if (hash !== existing.password_hash) {
+        return Response.json({ error: "Invalid password" }, { status: 401 });
+      }
+
+      try {
+        const token = sessionStore.createSession(existing.id, login);
+        return Response.json({ token, login });
+      } catch {
+        return Response.json(
+          { error: "This login is already in use in another session" },
+          { status: 409 },
+        );
+      }
+    }
+
+    // Create new user
+    const salt = crypto.randomUUID();
+    const hash = await hashPassword(password, salt);
+    const userId = await this.gameRepository.createUser(login, hash, salt);
+    await this.gameRepository.createPlayerProfile(userId);
+
+    const token = sessionStore.createSession(userId, login);
+    return Response.json({ token, login });
   }
 
-  // Create new user
-  const salt = crypto.randomUUID();
-  const hash = await hashPassword(password, salt);
-  const userId = await gameRepository.createUser(login, hash, salt);
-  await gameRepository.createPlayerProfile(userId);
-
-  const token = sessionStore.createSession(userId, login);
-  return Response.json({ token, login });
-}
-
-/**
- * Handle POST /api/logout.
- */
-export function handleLogout(
-  body: { token?: string },
-  sessionStore: SessionStore,
-): Response {
-  const { token } = body;
-  if (!token) {
-    return Response.json({ error: "token is required" }, { status: 400 });
+  /**
+   * Handle POST /api/logout.
+   */
+  handleLogout(
+    body: { token?: string },
+    sessionStore: SessionStore,
+  ): Response {
+    const { token } = body;
+    if (!token) {
+      return Response.json({ error: "token is required" }, { status: 400 });
+    }
+    sessionStore.invalidate(token);
+    return Response.json({ ok: true });
   }
-  sessionStore.invalidate(token);
-  return Response.json({ ok: true });
 }
 
 async function hashPassword(password: string, salt: string): Promise<string> {

@@ -1,13 +1,12 @@
 import { initDatabase } from "./src/db/connection";
-import { gameRepository } from "./src/db/repositories/GameRepository";
+import { GameRepository } from "./src/db/repositories/GameRepository";
 import { GameRegistry } from "./src/game/GameRegistry";
 import { ConnectionManager } from "./src/server/ConnectionManager";
+import { AuthHandler } from "./src/server/auth/handlers";
 import { SessionStore } from "./src/server/auth/sessions";
-import { handleLogin, handleLogout } from "./src/server/auth/handlers";
 import { RoomManager } from "./src/server/lobby/RoomManager";
-import { createWsHandlers, type WsData } from "./src/server/ws/handler";
-import { sanitizeStateForPlayer } from "./src/server/sanitize";
 import { scheduleBotTurns } from "./src/server/lobby/botScheduler";
+import { createWsHandlers, type WsData } from "./src/server/ws/handler";
 
 // ---------------------------------------------------------------------------
 // Bootstrap
@@ -16,6 +15,8 @@ import { scheduleBotTurns } from "./src/server/lobby/botScheduler";
 initDatabase();
 
 const sessionStore = new SessionStore();
+const gameRepository = new GameRepository();
+const authHandler = new AuthHandler(gameRepository);
 const gameRegistry = new GameRegistry(gameRepository);
 const connectionManager = new ConnectionManager(gameRegistry);
 const roomManager = new RoomManager(
@@ -54,12 +55,12 @@ const server = Bun.serve<WsData>({
 
     if (req.method === "POST" && url.pathname === "/api/login") {
       const body = (await req.json()) as { login?: string; password?: string };
-      return handleLogin(body, sessionStore);
+      return authHandler.handleLogin(body, sessionStore);
     }
 
     if (req.method === "POST" && url.pathname === "/api/logout") {
       const body = (await req.json()) as { token?: string };
-      return handleLogout(body, sessionStore);
+      return authHandler.handleLogout(body, sessionStore);
     }
 
     // --- WebSocket upgrade ---

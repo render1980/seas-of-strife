@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, it } from "bun:test";
-import { handleLogin, handleLogout } from "../../src/server/auth/handlers";
+import { AuthHandler } from "../../src/server/auth/handlers";
+import { GameRepository } from "../../src/db/repositories/GameRepository";
 import { SessionStore } from "../../src/server/auth/sessions";
 import { getDb, truncateAllTables } from "./helpers/db";
+
+const authHandler = new AuthHandler(new GameRepository());
 
 beforeEach(truncateAllTables);
 
@@ -9,7 +12,7 @@ describe("handlers -> GameRepository -> Postgres", () => {
   describe("handleLogin", () => {
     it("creates a new user and returns a token on first login", async () => {
       const store = new SessionStore();
-      const res = await handleLogin(
+      const res = await authHandler.handleLogin(
         { login: "alice", password: "secret" },
         store,
       );
@@ -23,7 +26,7 @@ describe("handlers -> GameRepository -> Postgres", () => {
 
     it("automatically creates a player_profile for a new user", async () => {
       const store = new SessionStore();
-      await handleLogin({ login: "alice", password: "secret" }, store);
+      await authHandler.handleLogin({ login: "alice", password: "secret" }, store);
 
       const sql = getDb();
       const rows = await sql`
@@ -37,7 +40,7 @@ describe("handlers -> GameRepository -> Postgres", () => {
 
     it("accepts the correct password for an existing user", async () => {
       const store1 = new SessionStore();
-      const first = await handleLogin(
+      const first = await authHandler.handleLogin(
         { login: "alice", password: "secret" },
         store1,
       );
@@ -45,7 +48,7 @@ describe("handlers -> GameRepository -> Postgres", () => {
       store1.invalidate(token);
 
       const store2 = new SessionStore();
-      const res = await handleLogin(
+      const res = await authHandler.handleLogin(
         { login: "alice", password: "secret" },
         store2,
       );
@@ -54,7 +57,7 @@ describe("handlers -> GameRepository -> Postgres", () => {
 
     it("returns 401 for a wrong password", async () => {
       const store1 = new SessionStore();
-      const first = await handleLogin(
+      const first = await authHandler.handleLogin(
         { login: "alice", password: "secret" },
         store1,
       );
@@ -62,7 +65,7 @@ describe("handlers -> GameRepository -> Postgres", () => {
       store1.invalidate(token);
 
       const store2 = new SessionStore();
-      const res = await handleLogin(
+      const res = await authHandler.handleLogin(
         { login: "alice", password: "wrong" },
         store2,
       );
@@ -71,19 +74,19 @@ describe("handlers -> GameRepository -> Postgres", () => {
 
     it("returns 400 when login is missing", async () => {
       const store = new SessionStore();
-      const res = await handleLogin({ password: "secret" }, store);
+      const res = await authHandler.handleLogin({ password: "secret" }, store);
       expect(res.status).toBe(400);
     });
 
     it("returns 400 when password is missing", async () => {
       const store = new SessionStore();
-      const res = await handleLogin({ login: "alice" }, store);
+      const res = await authHandler.handleLogin({ login: "alice" }, store);
       expect(res.status).toBe(400);
     });
 
     it("returns 400 when login exceeds 50 characters", async () => {
       const store = new SessionStore();
-      const res = await handleLogin(
+      const res = await authHandler.handleLogin(
         { login: "a".repeat(51), password: "secret" },
         store,
       );
@@ -93,10 +96,10 @@ describe("handlers -> GameRepository -> Postgres", () => {
     it("returns 409 when the same login already has an active session", async () => {
       const store = new SessionStore();
       // First login — succeeds and session remains active
-      await handleLogin({ login: "alice", password: "secret" }, store);
+      await authHandler.handleLogin({ login: "alice", password: "secret" }, store);
 
       // Second login on the same store while session is still live
-      const res = await handleLogin(
+      const res = await authHandler.handleLogin(
         { login: "alice", password: "secret" },
         store,
       );
@@ -107,7 +110,7 @@ describe("handlers -> GameRepository -> Postgres", () => {
   describe("handleLogout", () => {
     it("invalidates the session token", async () => {
       const store = new SessionStore();
-      const loginRes = await handleLogin(
+      const loginRes = await authHandler.handleLogin(
         { login: "alice", password: "secret" },
         store,
       );
@@ -115,14 +118,14 @@ describe("handlers -> GameRepository -> Postgres", () => {
 
       expect(store.getSession(token)).not.toBeNull();
 
-      handleLogout({ token }, store);
+      authHandler.handleLogout({ token }, store);
 
       expect(store.getSession(token)).toBeNull();
     });
 
     it("returns 400 when token is missing", () => {
       const store = new SessionStore();
-      const res = handleLogout({}, store);
+      const res = authHandler.handleLogout({}, store);
       expect(res.status).toBe(400);
     });
   });
