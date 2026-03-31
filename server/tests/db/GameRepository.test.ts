@@ -1,10 +1,6 @@
 import { beforeEach, describe, expect, it } from "bun:test";
 import { GameRepository } from "../../src/db/repositories/GameRepository";
-import {
-  getDb,
-  makeGameState,
-  truncateAllTables,
-} from "./helpers/db";
+import { getDb, makeGameState, truncateAllTables } from "./helpers/db";
 
 const repo = new GameRepository();
 
@@ -229,9 +225,9 @@ describe("GameRepository -> Postgres", () => {
     });
 
     it("throws when the game does not exist", async () => {
-      await expect(
-        repo.saveGameResults(999, ["player_1"], []),
-      ).rejects.toThrow("Game 999 not found");
+      await expect(repo.saveGameResults(999, ["player_1"], [])).rejects.toThrow(
+        "Game 999 not found",
+      );
     });
   });
 

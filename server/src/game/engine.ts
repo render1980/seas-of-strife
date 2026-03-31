@@ -100,7 +100,10 @@ export class GameEngine {
    * @param chooserId - the player who has the special power
    * @param chosenPlayerIndex - index into players array who will lead
    */
-  async selectNextLeader(chooserId: string, chosenPlayerIndex: number): Promise<MoveResult> {
+  async selectNextLeader(
+    chooserId: string,
+    chosenPlayerIndex: number,
+  ): Promise<MoveResult> {
     const state = this.sm.getState();
 
     if (!state.awaitingLeaderSelection) {

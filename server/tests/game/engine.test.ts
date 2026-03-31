@@ -141,7 +141,16 @@ describe("GameEngine", () => {
   });
 
   it("plays a full game for 3 players and 1 bot", async () => {
-    const players = [...makePlayers(3), { id: "bot-1", name: "Bot 1", isBot: true, hand: [], tricksTakenPerRound: 0 }];
+    const players = [
+      ...makePlayers(3),
+      {
+        id: "bot-1",
+        name: "Bot 1",
+        isBot: true,
+        hand: [],
+        tricksTakenPerRound: 0,
+      },
+    ];
     const engine = new GameEngine(createInitialGameState(1, players));
     engine.startGame();
 

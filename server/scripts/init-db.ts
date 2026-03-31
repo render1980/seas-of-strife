@@ -42,7 +42,7 @@ async function main(): Promise<void> {
 
     // Verify tables
     console.log("Verifying tables...");
-    const tables = await sql`
+    const tablesRows = await sql`
       SELECT table_name 
       FROM information_schema.tables 
       WHERE table_schema = 'public'
@@ -58,24 +58,23 @@ async function main(): Promise<void> {
       "player_game_results",
     ];
 
-    const createdTables = tables.map((t: any) => t.table_name);
-    const allTablesCreated = expectedTables.every((t) =>
-      createdTables.includes(t),
+    const tables = tablesRows.map((t: any) => t.table_name);
+    const allExpectedTablesExist = expectedTables.every((t) =>
+      tables.includes(t),
     );
 
-    console.log(`\nTables created: ${createdTables.join(", ")}`);
+    console.log(`\nTables: ${tables.join(", ")}`);
 
-    if (allTablesCreated) {
-      console.log("\n✅ All expected tables created successfully!");
+    if (allExpectedTablesExist) {
+      console.log("\n✅ All expected tables exist!");
     } else {
-      const missing = expectedTables.filter((t) => !createdTables.includes(t));
+      const missing = expectedTables.filter((t) => !tables.includes(t));
       console.warn(`⚠️  Missing tables: ${missing.join(", ")}`);
     }
 
-    // Show table row counts
     console.log("\n📊 Table row counts:");
     for (const tableName of expectedTables) {
-      if (createdTables.includes(tableName)) {
+      if (tables.includes(tableName)) {
         const count = await sql`SELECT COUNT(*) as cnt FROM ${sql(tableName)}`;
         console.log(`   ${tableName}: ${count[0]?.cnt} rows`);
       }

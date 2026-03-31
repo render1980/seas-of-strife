@@ -1,10 +1,7 @@
 import { beforeEach, describe, expect, it } from "bun:test";
 import { GameRepository } from "../../src/db/repositories/GameRepository";
 import { GameRegistry } from "../../src/game/GameRegistry";
-import {
-  makePlayers,
-  truncateAllTables,
-} from "./helpers/db";
+import { makePlayers, truncateAllTables } from "./helpers/db";
 
 beforeEach(truncateAllTables);
 

@@ -1,21 +1,22 @@
 import postgres from "postgres";
 
-const adminUrl =
-  process.env.DATABASE_ADMIN_URL ??
-  "postgres://postgres:postgres@localhost:5432/postgres";
-
-const sql = postgres(adminUrl);
+const databaseUrl = process.env.DATABASE_URL;
+let sql: postgres.Sql;
 
 try {
+  if (databaseUrl) {
+    console.log(`📍 Using DATABASE_URL`);
+    sql = postgres(databaseUrl);
+  } else {
+    throw new Error(
+      "DATABASE_URL not set. Please provide connection parameters from the environment (e.g. by using .env configuration).",
+    );
+  }
+
   await sql`CREATE DATABASE seas_of_strife_test`;
   console.log("Test database created.");
-} catch (e: any) {
-  if (e.code === "42P04") {
-    // duplicate_database — already exists, fine
-    console.log("Test database already exists, continuing.");
-  } else {
-    throw e;
-  }
-} finally {
-  await sql.end();
+} catch (error) {
+  console.error("\n❌ Error initializing database:");
+  console.error(error);
+  process.exit(1);
 }

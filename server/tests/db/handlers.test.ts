@@ -1,8 +1,5 @@
 import { beforeEach, describe, expect, it } from "bun:test";
-import {
-  handleLogin,
-  handleLogout,
-} from "../../src/server/auth/handlers";
+import { handleLogin, handleLogout } from "../../src/server/auth/handlers";
 import { SessionStore } from "../../src/server/auth/sessions";
 import { getDb, truncateAllTables } from "./helpers/db";
 
@@ -12,8 +9,11 @@ describe("handlers -> GameRepository -> Postgres", () => {
   describe("handleLogin", () => {
     it("creates a new user and returns a token on first login", async () => {
       const store = new SessionStore();
-      const res = await handleLogin({ login: "alice", password: "secret" }, store);
-      const body = await res.json() as { login: string; token: string };
+      const res = await handleLogin(
+        { login: "alice", password: "secret" },
+        store,
+      );
+      const body = (await res.json()) as { login: string; token: string };
 
       expect(res.status).toBe(200);
       expect(body.login).toBe("alice");
@@ -37,23 +37,35 @@ describe("handlers -> GameRepository -> Postgres", () => {
 
     it("accepts the correct password for an existing user", async () => {
       const store1 = new SessionStore();
-      const first = await handleLogin({ login: "alice", password: "secret" }, store1);
-      const { token } = await first.json() as { token: string };
+      const first = await handleLogin(
+        { login: "alice", password: "secret" },
+        store1,
+      );
+      const { token } = (await first.json()) as { token: string };
       store1.invalidate(token);
 
       const store2 = new SessionStore();
-      const res = await handleLogin({ login: "alice", password: "secret" }, store2);
+      const res = await handleLogin(
+        { login: "alice", password: "secret" },
+        store2,
+      );
       expect(res.status).toBe(200);
     });
 
     it("returns 401 for a wrong password", async () => {
       const store1 = new SessionStore();
-      const first = await handleLogin({ login: "alice", password: "secret" }, store1);
-      const { token } = await first.json() as { token: string };
+      const first = await handleLogin(
+        { login: "alice", password: "secret" },
+        store1,
+      );
+      const { token } = (await first.json()) as { token: string };
       store1.invalidate(token);
 
       const store2 = new SessionStore();
-      const res = await handleLogin({ login: "alice", password: "wrong" }, store2);
+      const res = await handleLogin(
+        { login: "alice", password: "wrong" },
+        store2,
+      );
       expect(res.status).toBe(401);
     });
 
@@ -84,7 +96,10 @@ describe("handlers -> GameRepository -> Postgres", () => {
       await handleLogin({ login: "alice", password: "secret" }, store);
 
       // Second login on the same store while session is still live
-      const res = await handleLogin({ login: "alice", password: "secret" }, store);
+      const res = await handleLogin(
+        { login: "alice", password: "secret" },
+        store,
+      );
       expect(res.status).toBe(409);
     });
   });
@@ -92,8 +107,11 @@ describe("handlers -> GameRepository -> Postgres", () => {
   describe("handleLogout", () => {
     it("invalidates the session token", async () => {
       const store = new SessionStore();
-      const loginRes = await handleLogin({ login: "alice", password: "secret" }, store);
-      const { token } = await loginRes.json() as { token: string };
+      const loginRes = await handleLogin(
+        { login: "alice", password: "secret" },
+        store,
+      );
+      const { token } = (await loginRes.json()) as { token: string };
 
       expect(store.getSession(token)).not.toBeNull();
 
