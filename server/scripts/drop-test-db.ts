@@ -1,8 +1,10 @@
 import postgres from "postgres";
 
-const adminUrl =
-  process.env.DATABASE_ADMIN_URL ??
-  "postgres://postgres:postgres@localhost:5432/postgres";
+const adminUrl = process.env.DATABASE_ADMIN_URL;
+if (!adminUrl) {
+  console.error("❌ DATABASE_ADMIN_URL not set.");
+  process.exit(1);
+}
 
 const sql = postgres(adminUrl);
 
