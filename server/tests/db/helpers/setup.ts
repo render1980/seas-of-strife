@@ -4,18 +4,13 @@
  * and closes it after all test files finish — avoiding the race
  * condition where one file's afterAll(closeDatabase) kills the
  * shared connection for the others.
+ *
+ * The schema is applied by `scripts/init-db.ts --create` before `bun test` runs.
  */
-import { afterAll, beforeAll } from "bun:test";
-import { initDatabase, getDb, closeDatabase } from "../../../src/db/connection";
-import { schema } from "../../../src/db/schema";
+import { afterAll } from "bun:test";
+import { initDatabase, closeDatabase } from "../../../src/db/connection";
 
-// Init at module level so getDb() works in test file top-level code.
 initDatabase();
-
-beforeAll(async () => {
-  const sql = getDb();
-  await sql.unsafe(schema);
-});
 
 afterAll(async () => {
   await closeDatabase();
