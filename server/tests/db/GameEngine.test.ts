@@ -66,7 +66,8 @@ describe("GameEngine -> GameRepository -> Postgres", () => {
     expect(engine.getPhase()).toBe("game-end");
 
     // games row reflects final state
-    const gameRows = await sql`SELECT phase, current_round FROM games WHERE game_id = 1`;
+    const gameRows =
+      await sql`SELECT phase, current_round FROM games WHERE game_id = 1`;
     expect(gameRows[0]?.phase).toBe("game-end");
     expect(gameRows[0]?.current_round).toBe(TOTAL_ROUNDS_PER_GAME);
 

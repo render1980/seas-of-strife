@@ -1,13 +1,9 @@
 import type { ServerWebSocket } from "bun";
 import type { GameRegistry } from "../../game/GameRegistry";
+import type { ServerMessage } from "../../types/messages";
+import type { PlayerState } from "../../types/types";
 import type { ConnectionManager } from "../ConnectionManager";
 import type { SessionStore } from "../auth/sessions";
-import type { PlayerState, MIN_PLAYERS, MAX_PLAYERS } from "../../types/types";
-import type {
-  LobbyPlayer,
-  ServerMessage,
-  SanitizedGameState,
-} from "../../types/messages";
 import { sanitizeStateForPlayer } from "../sanitize";
 import type { WsData } from "../ws/handler";
 

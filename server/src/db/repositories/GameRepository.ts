@@ -12,7 +12,6 @@ export class GameRepository {
    * Called after every trick.
    */
   async saveGameState(gameState: GameState): Promise<void> {
-
     await this.sql`
       INSERT INTO games (game_id, game_state, phase, current_round)
       VALUES (${gameState.gameId}, ${JSON.stringify(gameState)}, ${gameState.phase}, ${gameState.currentRound})
@@ -30,7 +29,6 @@ export class GameRepository {
    * Returns null if not found or state is structurally invalid.
    */
   async loadGameState(gameId: number): Promise<GameState | null> {
-
     try {
       const result = await this.sql<[{ game_state: string }]>`
         SELECT game_state FROM games WHERE game_id = ${gameId}

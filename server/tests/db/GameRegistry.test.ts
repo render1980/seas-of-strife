@@ -3,7 +3,7 @@ import { GameRepository } from "../../src/db/repositories/GameRepository";
 import { GameRegistry } from "../../src/game/GameRegistry";
 import { getDb, makePlayers, truncateAllTables } from "./helpers/db";
 
-let sql = getDb()
+let sql = getDb();
 
 beforeEach(truncateAllTables);
 

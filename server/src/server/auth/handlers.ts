@@ -66,10 +66,7 @@ export class AuthHandler {
   /**
    * Handle POST /api/logout.
    */
-  handleLogout(
-    body: { token?: string },
-    sessionStore: SessionStore,
-  ): Response {
+  handleLogout(body: { token?: string }, sessionStore: SessionStore): Response {
     const { token } = body;
     if (!token) {
       return Response.json({ error: "token is required" }, { status: 400 });

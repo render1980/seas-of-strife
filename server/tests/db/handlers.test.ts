@@ -27,7 +27,10 @@ describe("handlers -> GameRepository -> Postgres", () => {
 
     it("automatically creates a player_profile for a new user", async () => {
       const store = new SessionStore();
-      await authHandler.handleLogin({ login: "alice", password: "secret" }, store);
+      await authHandler.handleLogin(
+        { login: "alice", password: "secret" },
+        store,
+      );
 
       const rows = await sql`
         SELECT pp.id
@@ -96,7 +99,10 @@ describe("handlers -> GameRepository -> Postgres", () => {
     it("returns 409 when the same login already has an active session", async () => {
       const store = new SessionStore();
       // First login — succeeds and session remains active
-      await authHandler.handleLogin({ login: "alice", password: "secret" }, store);
+      await authHandler.handleLogin(
+        { login: "alice", password: "secret" },
+        store,
+      );
 
       // Second login on the same store while session is still live
       const res = await authHandler.handleLogin(

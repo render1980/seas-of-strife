@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "bun:test";
 import { GameRepository } from "../../src/db/repositories/GameRepository";
 import { getDb, makeGameState, truncateAllTables } from "./helpers/db";
 
-let sql = getDb()
+let sql = getDb();
 const repo = new GameRepository(sql);
 
 beforeEach(truncateAllTables);
