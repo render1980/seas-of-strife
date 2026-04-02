@@ -124,7 +124,7 @@ export class RoomManager {
     this.destroyRoom(gameId);
   }
 
-  startGame(requesterId: string): void {
+  async startGame(requesterId: string): Promise<void> {
     const gameId = this.playerRoom.get(requesterId);
     if (gameId === undefined) throw new Error("Not in a game");
 
@@ -159,8 +159,8 @@ export class RoomManager {
     }
 
     // Create engine and start game
-    const engine = this.gameRegistry.createGame(gameId, players);
-    engine.startGame();
+    const engine = await this.gameRegistry.createGame(gameId, players);
+    await engine.startGame();
     room.started = true;
 
     // Register connections

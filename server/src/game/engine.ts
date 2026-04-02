@@ -90,9 +90,9 @@ export class GameEngine {
    * Starts the game: transitions from 'waiting' → 'round-start' → 'trick-playing'.
    * Player list must already be populated (including bots).
    */
-  startGame(): void {
+  async startGame(): Promise<void> {
     this.sm.transition("round-start");
-    this.applyRoundStart();
+    await this.applyRoundStart();
   }
 
   /**

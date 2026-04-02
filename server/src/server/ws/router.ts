@@ -57,7 +57,7 @@ export async function routeMessage(
       }
 
       case "start_game": {
-        roomManager.startGame(playerId);
+        await roomManager.startGame(playerId);
 
         // Check if first player is a bot → schedule bot turn
         const gameId = roomManager.getPlayerGameId(playerId);
