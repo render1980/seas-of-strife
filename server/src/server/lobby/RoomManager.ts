@@ -93,16 +93,17 @@ export class RoomManager {
     }
 
     if (!room.started) {
-      // In lobby: remove player
-      room.players.delete(playerId);
-      room.playerNames.delete(playerId);
-      this.playerRoom.delete(playerId);
+      const dissolve = playerId === room.creatorId || room.players.size === 1;
 
-      if (playerId === room.creatorId || room.players.size === 0) {
-        // Creator left or room empty → dissolve
+      if (dissolve) {
+        // Broadcast to everyone (including the leaving player) before cleanup
         this.broadcast(room, { type: "game_stopped" });
         this.destroyRoom(gameId);
       } else {
+        // Non-creator: remove then update remaining players
+        room.players.delete(playerId);
+        room.playerNames.delete(playerId);
+        this.playerRoom.delete(playerId);
         this.broadcastLobbyUpdate(room);
       }
     }

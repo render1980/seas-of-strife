@@ -6,7 +6,7 @@ import { GameRepository } from "../../src/db/repositories/GameRepository";
 import { ConnectionManager } from "../../src/server/ConnectionManager";
 import { SessionStore } from "../../src/server/auth/sessions";
 import type { WsData } from "../../src/server/ws/handler";
-import { getDb, truncateAllTables } from "./helpers/db";
+import { getDb, truncateAllTables } from "../db/helpers/db";
 
 // ---------------------------------------------------------------------------
 // Mock WebSocket — captures sent messages without any real network I/O
