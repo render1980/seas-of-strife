@@ -15,7 +15,7 @@ import { GameRegistry } from "../../src/game/GameRegistry";
 import { GameRepository } from "../../src/db/repositories/GameRepository";
 import { ConnectionManager } from "../../src/server/ConnectionManager";
 import { SessionStore } from "../../src/server/auth/sessions";
-import { getDb, truncateAllTables } from "../db/helpers/db";
+import { getDb, truncateAllTables } from "./helpers/db";
 import { getValidCards } from "../../src/game/trick";
 
 // ---------------------------------------------------------------------------
