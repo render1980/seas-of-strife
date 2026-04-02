@@ -58,11 +58,7 @@ function makeEnv() {
 }
 
 /** Send a JSON message through routeMessage and return all new outbound msgs. */
-async function send(
-  ws: MockWs,
-  msg: object,
-  deps: WsDeps,
-): Promise<any[]> {
+async function send(ws: MockWs, msg: object, deps: WsDeps): Promise<any[]> {
   const before = ws.msgs.length;
   await routeMessage(ws.ws, JSON.stringify(msg), deps);
   return ws.msgs.slice(before);
@@ -148,7 +144,9 @@ describe("routeMessage -> RoomManager -> GameRegistry -> Postgres", () => {
       const bob = mockWs("bob");
 
       const aliceReplies = await send(alice, { type: "create_game" }, deps);
-      const gameId = aliceReplies.find((m) => m.type === "game_created")!.gameId;
+      const gameId = aliceReplies.find(
+        (m) => m.type === "game_created",
+      )!.gameId;
 
       alice.msgs.length = 0;
       bob.msgs.length = 0;
@@ -173,7 +171,9 @@ describe("routeMessage -> RoomManager -> GameRegistry -> Postgres", () => {
       const carol = mockWs("carol");
 
       const aliceReplies = await send(alice, { type: "create_game" }, deps);
-      const gameId = aliceReplies.find((m) => m.type === "game_created")!.gameId;
+      const gameId = aliceReplies.find(
+        (m) => m.type === "game_created",
+      )!.gameId;
       await send(bob, { type: "join_game", gameId }, deps);
       await send(carol, { type: "join_game", gameId }, deps);
 
@@ -183,9 +183,7 @@ describe("routeMessage -> RoomManager -> GameRegistry -> Postgres", () => {
 
       const aliceLobby = alice.msgs.find((m) => m.type === "lobby_update");
       expect(aliceLobby).toBeDefined();
-      expect(
-        aliceLobby.players.map((p: any) => p.id),
-      ).not.toContain("bob");
+      expect(aliceLobby.players.map((p: any) => p.id)).not.toContain("bob");
     });
 
     it("leave_game by creator dissolves room and sends game_stopped to all", async () => {
@@ -194,7 +192,9 @@ describe("routeMessage -> RoomManager -> GameRegistry -> Postgres", () => {
       const bob = mockWs("bob");
 
       const aliceReplies = await send(alice, { type: "create_game" }, deps);
-      const gameId = aliceReplies.find((m) => m.type === "game_created")!.gameId;
+      const gameId = aliceReplies.find(
+        (m) => m.type === "game_created",
+      )!.gameId;
       await send(bob, { type: "join_game", gameId }, deps);
 
       alice.msgs.length = 0;
@@ -211,7 +211,9 @@ describe("routeMessage -> RoomManager -> GameRegistry -> Postgres", () => {
       const alice = mockWs("alice");
 
       const aliceReplies = await send(alice, { type: "create_game" }, deps);
-      const gameId = aliceReplies.find((m) => m.type === "game_created")!.gameId;
+      const gameId = aliceReplies.find(
+        (m) => m.type === "game_created",
+      )!.gameId;
 
       await send(alice, { type: "start_game" }, deps);
 
@@ -233,7 +235,9 @@ describe("routeMessage -> RoomManager -> GameRegistry -> Postgres", () => {
       const bob = mockWs("bob");
 
       const aliceReplies = await send(alice, { type: "create_game" }, deps);
-      const gameId = aliceReplies.find((m) => m.type === "game_created")!.gameId;
+      const gameId = aliceReplies.find(
+        (m) => m.type === "game_created",
+      )!.gameId;
       await send(bob, { type: "join_game", gameId }, deps);
 
       alice.msgs.length = 0;
@@ -252,7 +256,9 @@ describe("routeMessage -> RoomManager -> GameRegistry -> Postgres", () => {
       const bob = mockWs("bob");
 
       const aliceReplies = await send(alice, { type: "create_game" }, deps);
-      const gameId = aliceReplies.find((m) => m.type === "game_created")!.gameId;
+      const gameId = aliceReplies.find(
+        (m) => m.type === "game_created",
+      )!.gameId;
       await send(bob, { type: "join_game", gameId }, deps);
 
       const replies = await send(bob, { type: "start_game" }, deps);
@@ -328,11 +334,7 @@ describe("routeMessage -> RoomManager -> GameRegistry -> Postgres", () => {
         (w) => w.ws.data.playerId === currentPlayer.id,
       )!;
 
-      await send(
-        playerWs,
-        { type: "play_card", card: validCards[0]! },
-        deps,
-      );
+      await send(playerWs, { type: "play_card", card: validCards[0]! }, deps);
 
       // Every human player receives some kind of state update
       for (const p of players) {
@@ -374,11 +376,7 @@ describe("routeMessage -> RoomManager -> GameRegistry -> Postgres", () => {
         (w) => w.ws.data.playerId === currentPlayer.id,
       )!;
 
-      await send(
-        playerWs,
-        { type: "play_card", card: validCards[0]! },
-        deps,
-      );
+      await send(playerWs, { type: "play_card", card: validCards[0]! }, deps);
 
       // For each human player, inspect the game_state received
       for (const p of players) {
@@ -481,25 +479,21 @@ describe("routeMessage -> RoomManager -> GameRegistry -> Postgres", () => {
       )!;
       const validCards = getValidCards(currentPlayer.id, gs);
 
-      await send(
-        playerWs,
-        { type: "play_card", card: validCards[0]! },
-        deps,
-      );
+      await send(playerWs, { type: "play_card", card: validCards[0]! }, deps);
 
       // DB must have been updated (phase will still be trick-playing or trick-resolution)
-      const rows =
-        await sql`SELECT phase FROM games WHERE game_id = ${gameId}`;
+      const rows = await sql`SELECT phase FROM games WHERE game_id = ${gameId}`;
       expect(rows.length).toBe(1);
-      expect(["trick-playing", "trick-resolution", "round-end", "game-end"]).toContain(
-        rows[0]?.phase,
-      );
+      expect([
+        "trick-playing",
+        "trick-resolution",
+        "round-end",
+        "game-end",
+      ]).toContain(rows[0]?.phase);
 
       // Card is no longer in the player's hand in the engine
       gs = engine.getGameState();
-      const updatedPlayer = gs.players.find(
-        (p) => p.id === currentPlayer.id,
-      )!;
+      const updatedPlayer = gs.players.find((p) => p.id === currentPlayer.id)!;
       expect(updatedPlayer.hand).not.toContain(validCards[0]);
     });
   });
