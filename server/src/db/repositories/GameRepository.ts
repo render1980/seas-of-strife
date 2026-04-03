@@ -271,4 +271,15 @@ export class GameRepository {
       createdAt: r.created_at,
     }));
   }
+
+  /**
+   * Returns the highest game_id currently in the database (0 if none).
+   * Used to seed RoomManager's nextGameId on startup.
+   */
+  async getMaxGameId(): Promise<number> {
+    const rows = await this.sql<[{ max: number | null }]>`
+      SELECT MAX(game_id) AS max FROM games
+    `;
+    return rows[0]?.max ?? 0;
+  }
 }

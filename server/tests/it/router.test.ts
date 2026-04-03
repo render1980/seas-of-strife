@@ -17,6 +17,7 @@ import { ConnectionManager } from "../../src/server/ConnectionManager";
 import { SessionStore } from "../../src/server/auth/sessions";
 import { getDb, truncateAllTables } from "./helpers/db";
 import { getValidCards } from "../../src/game/trick";
+import { sanitizeStateForPlayer } from "../../src/server/sanitize";
 
 // ---------------------------------------------------------------------------
 // Mock WebSocket
@@ -495,6 +496,104 @@ describe("routeMessage -> RoomManager -> GameRegistry -> Postgres", () => {
       gs = engine.getGameState();
       const updatedPlayer = gs.players.find((p) => p.id === currentPlayer.id)!;
       expect(updatedPlayer.hand).not.toContain(validCards[0]);
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Reconnect flow
+  // -----------------------------------------------------------------------
+  describe("reconnect flow", () => {
+    it("reconnecting player receives current game_state and others get player_reconnected", async () => {
+      const { deps, rm, registry, connManager } = makeEnv();
+      const alice = mockWs("alice");
+      const bob   = mockWs("bob");
+      const carol = mockWs("carol");
+      const dave  = mockWs("dave");
+
+      const r = await send(alice, { type: "create_game" }, deps);
+      const gameId = r.find((m: any) => m.type === "game_created")!.gameId;
+      await send(bob,   { type: "join_game", gameId }, deps);
+      await send(carol, { type: "join_game", gameId }, deps);
+      await send(dave,  { type: "join_game", gameId }, deps);
+      await send(alice, { type: "start_game" }, deps);
+
+      // Simulate disconnect then reconnect with a new WS
+      const alice2 = mockWs("alice");
+      rm.updatePlayerSocket("alice", alice2.ws);
+      connManager.playerConnected(gameId, "alice");
+
+      // Replicate what createWsHandlers.open does on reconnect
+      const engine = registry.getGame(gameId)!;
+      const state = engine.getGameState();
+      alice2.ws.send(
+        JSON.stringify({
+          type: "game_state",
+          state: sanitizeStateForPlayer(state, "alice"),
+        }),
+      );
+      rm.broadcast(rm.getRoom(gameId)!, {
+        type: "player_reconnected",
+        playerId: "alice",
+      });
+
+      // alice2's new socket receives the current game state
+      expect(alice2.msgs.some((m: any) => m.type === "game_state")).toBe(true);
+      const stateMsg = alice2.msgs.find((m: any) => m.type === "game_state")!;
+      // Hand is populated (own cards visible)
+      const alicePlayer = stateMsg.state.players.find(
+        (p: any) => p.id === "alice",
+      );
+      expect(alicePlayer.hand.length).toBeGreaterThan(0);
+
+      // All other players receive player_reconnected
+      for (const p of [bob, carol, dave]) {
+        expect(
+          p.msgs.some((m: any) => m.type === "player_reconnected" && m.playerId === "alice"),
+        ).toBe(true);
+      }
+    });
+
+    it("reconnecting player can continue playing cards on their new socket", async () => {
+      const { deps, rm, registry } = makeEnv();
+      const alice = mockWs("alice");
+      const bob   = mockWs("bob");
+      const carol = mockWs("carol");
+      const dave  = mockWs("dave");
+
+      const r = await send(alice, { type: "create_game" }, deps);
+      const gameId = r.find((m: any) => m.type === "game_created")!.gameId;
+      await send(bob,   { type: "join_game", gameId }, deps);
+      await send(carol, { type: "join_game", gameId }, deps);
+      await send(dave,  { type: "join_game", gameId }, deps);
+      await send(alice, { type: "start_game" }, deps);
+
+      // Reconnect alice with a new socket
+      const alice2 = mockWs("alice");
+      rm.updatePlayerSocket("alice", alice2.ws);
+
+      // Find valid move for current player; if it's alice, play via new socket
+      const engine = registry.getGame(gameId)!;
+      const gs = engine.getGameState();
+      const currentPlayer = gs.players[gs.currentPlayerIndex]!;
+
+      // Pick the right socket for the current player
+      const allSockets = new Map([
+        ["alice", alice2],
+        ["bob",   bob],
+        ["carol", carol],
+        ["dave",  dave],
+      ]);
+      const playerWs = allSockets.get(currentPlayer.id)!;
+      const validCards = getValidCards(currentPlayer.id, gs);
+
+      const replies = await send(
+        playerWs,
+        { type: "play_card", card: validCards[0]! },
+        deps,
+      );
+
+      // Should not get an error — the game state was updated
+      expect(replies.some((m: any) => m.type === "error")).toBe(false);
     });
   });
 });

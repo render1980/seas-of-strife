@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "bun:test";
 import { AuthHandler } from "../../src/server/auth/handlers";
 import { GameRepository } from "../../src/db/repositories/GameRepository";
 import { SessionStore } from "../../src/server/auth/sessions";
-import { getDb, truncateAllTables } from "../db/helpers/db";
+import { getDb, truncateAllTables } from "./helpers/db";
 
 const sql = getDb();
 const authHandler = new AuthHandler(new GameRepository(sql));

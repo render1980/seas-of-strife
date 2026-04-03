@@ -8,7 +8,7 @@
     "dev": "bun --watch index.ts",
     "fmt": "npx prettier --write '**/*.ts'",
     "test": "bun test tests/game/*",
-    "test:db": "bun run --env-file .env.test scripts/init-db.ts --create seas_of_strife_test && bun test --preload ./tests/db/helpers/setup.ts tests/db/; code=$?; bun run --env-file .env.test scripts/drop-test-db.ts; exit $code"
+    "test:it": "bun run --env-file .env.test scripts/init-db.ts --create seas_of_strife_test && bun test --preload ./tests/it/helpers/setup.ts tests/it/; code=$?; bun run --env-file .env.test scripts/drop-test-db.ts; exit $code"
   },
   "dependencies": {
     "postgres": "^3.4"

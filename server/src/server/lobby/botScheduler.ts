@@ -3,12 +3,12 @@ import type { RoomManager } from "./RoomManager";
 import type { ConnectionManager } from "../ConnectionManager";
 import { sanitizeStateForPlayer } from "../sanitize";
 
-const BOT_DELAY_MIN = 1000;
-const BOT_DELAY_MAX = 2000;
-
 /**
- * Check if the current player is a bot and schedule auto-play with 1-2s delay.
- * Chains if consecutive players are bots.
+ * Check if the current player is a bot and schedule auto-play with a short
+ * random delay.  The delay bounds are read lazily from environment variables
+ * so that tests can override them to 0 without reloading the module:
+ *   BOT_DELAY_MIN (ms, default 1000)
+ *   BOT_DELAY_MAX (ms, default 2000)
  */
 export function scheduleBotTurns(
   gameId: number,
@@ -25,8 +25,9 @@ export function scheduleBotTurns(
   const currentPlayer = state.players[state.currentPlayerIndex];
   if (!currentPlayer?.isBot) return;
 
-  const delay =
-    BOT_DELAY_MIN + Math.floor(Math.random() * (BOT_DELAY_MAX - BOT_DELAY_MIN));
+  const minDelay = Number(process.env.BOT_DELAY_MIN ?? 1000);
+  const maxDelay = Number(process.env.BOT_DELAY_MAX ?? 2000);
+  const delay = minDelay + Math.floor(Math.random() * Math.max(1, maxDelay - minDelay));
 
   setTimeout(async () => {
     try {
@@ -41,7 +42,7 @@ export function scheduleBotTurns(
         const randomIndex = Math.floor(
           Math.random() * freshState.players.length,
         );
-        const result = engine.selectNextLeader(botPlayer.id, randomIndex);
+        const result = await engine.selectNextLeader(botPlayer.id, randomIndex);
         if (result.success) {
           const updatedState = engine.getGameState();
           roomManager.broadcastGameState(room, updatedState);

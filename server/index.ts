@@ -24,6 +24,7 @@ const roomManager = new RoomManager(
   connectionManager,
   sessionStore,
 );
+roomManager.seedNextGameId(await gameRepository.getMaxGameId());
 
 // Wire auto-play broadcast: after 30s timeout fires, broadcast updated state
 connectionManager.setOnAutoPlay(async (gameId, playerId) => {

@@ -17,12 +17,11 @@ interface Room {
   started: boolean;
 }
 
-let nextGameId = 1;
-
 export class RoomManager {
   private rooms: Map<number, Room> = new Map();
   /** Reverse lookup: playerId → gameId */
   private playerRoom: Map<string, number> = new Map();
+  private nextGameId = 1;
 
   private gameRegistry: GameRegistry;
   private connectionManager: ConnectionManager;
@@ -51,7 +50,7 @@ export class RoomManager {
       throw new Error("Already in a game");
     }
 
-    const gameId = nextGameId++;
+    const gameId = this.nextGameId++;
     const room: Room = {
       gameId,
       creatorId: playerId,
@@ -274,5 +273,13 @@ export class RoomManager {
    */
   removePlayerTracking(playerId: string): void {
     this.playerRoom.delete(playerId);
+  }
+
+  /**
+   * Seed the game ID counter from the database so IDs never collide after a
+   * server restart. Call once on startup before accepting connections.
+   */
+  seedNextGameId(maxExistingId: number): void {
+    this.nextGameId = Math.max(this.nextGameId, maxExistingId + 1);
   }
 }

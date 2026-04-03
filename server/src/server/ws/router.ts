@@ -187,7 +187,7 @@ export async function routeMessage(
         const room = roomManager.getRoom(gameId);
         if (!room) return;
 
-        const result = engine.selectNextLeader(playerId, msg.playerIndex);
+        const result = await engine.selectNextLeader(playerId, msg.playerIndex);
         if (!result.success) {
           send(ws, { type: "error", message: result.error ?? "Invalid" });
           return;
