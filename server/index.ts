@@ -1,12 +1,12 @@
 import { initDatabase } from "./src/db/connection";
 import { GameRepository } from "./src/db/repositories/GameRepository";
 import { GameRegistry } from "./src/game/GameRegistry";
-import { ConnectionManager } from "./src/server/ConnectionManager";
-import { AuthHandler } from "./src/server/auth/handlers";
-import { SessionStore } from "./src/server/auth/sessions";
-import { RoomManager } from "./src/server/lobby/RoomManager";
-import { scheduleBotTurns } from "./src/server/lobby/botScheduler";
-import { createWsHandlers, type WsData } from "./src/server/ws/handler";
+import { ConnectionManager } from "./src/ws/ConnectionManager";
+import { AuthHandler } from "./src/ws/auth/handlers";
+import { SessionStore } from "./src/ws/auth/sessions";
+import { RoomManager } from "./src/ws/lobby/RoomManager";
+import { scheduleBotTurns } from "./src/ws/lobby/botScheduler";
+import { createWsHandlers, type WsData } from "./src/ws/ws/handler";
 
 // ---------------------------------------------------------------------------
 // Bootstrap

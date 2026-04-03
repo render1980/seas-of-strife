@@ -8,16 +8,16 @@
  */
 import { beforeEach, describe, expect, it } from "bun:test";
 import type { ServerWebSocket } from "bun";
-import { routeMessage } from "../../src/server/ws/router";
-import type { WsData, WsDeps } from "../../src/server/ws/handler";
-import { RoomManager } from "../../src/server/lobby/RoomManager";
+import { routeMessage } from "../../src/ws/ws/router";
+import type { WsData, WsDeps } from "../../src/ws/ws/handler";
+import { RoomManager } from "../../src/ws/lobby/RoomManager";
 import { GameRegistry } from "../../src/game/GameRegistry";
 import { GameRepository } from "../../src/db/repositories/GameRepository";
-import { ConnectionManager } from "../../src/server/ConnectionManager";
-import { SessionStore } from "../../src/server/auth/sessions";
+import { ConnectionManager } from "../../src/ws/ConnectionManager";
+import { SessionStore } from "../../src/ws/auth/sessions";
 import { getDb, truncateAllTables } from "./helpers/db";
 import { getValidCards } from "../../src/game/trick";
-import { sanitizeStateForPlayer } from "../../src/server/sanitize";
+import { sanitizeStateForPlayer } from "../../src/ws/sanitize";
 
 // ---------------------------------------------------------------------------
 // Mock WebSocket
