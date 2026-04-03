@@ -38,12 +38,14 @@ When create a new game:
 1. User presses 'new game' button (or icon)
 3. User waits until required amount of players join. Any time the creator of a game can press button 'start'. If there are less than 4 players joined then remaining places will be occupied by bots. If there is one player joined (creator) then other 3 will be bots. For example, if 3 people joined then 1 bot will participate in the game. It is possible to join to up to 6 real players.
 
+Creator can stop the game and all players will be redirected to the main screen.
+
 When join an existing game:
 1. User presses 'join' button (or icon)
 2. User types the identifier of the game. Identifier should be a number that uniquely identifies the game among other possible existing games.
 3. User joins the game and waits until either creator presses 'start' or defined for the game amount of players join.
 
-User anytime can leave a game and go to the main screen. Creator can stop the game and all players will be redirected to the main screen.
+User anytime can leave a game and go to the main screen. 
 
 ## Profile
 
