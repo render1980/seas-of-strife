@@ -37,7 +37,7 @@ export class AuthHandler {
 
     if (existing) {
       // Validate password
-      const hash = await hashPassword(password, existing.password_salt);
+      const hash = await this.hashPassword(password, existing.password_salt);
       if (hash !== existing.password_hash) {
         return Response.json({ error: "Invalid password" }, { status: 401 });
       }
@@ -55,7 +55,7 @@ export class AuthHandler {
 
     // Create new user
     const salt = crypto.randomUUID();
-    const hash = await hashPassword(password, salt);
+    const hash = await this.hashPassword(password, salt);
     const userId = await this.gameRepository.createUser(login, hash, salt);
     await this.gameRepository.createPlayerProfile(userId);
 
@@ -74,10 +74,10 @@ export class AuthHandler {
     sessionStore.invalidate(token);
     return Response.json({ ok: true });
   }
-}
 
-async function hashPassword(password: string, salt: string): Promise<string> {
-  const data = new TextEncoder().encode(password + salt);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-  return Buffer.from(hashBuffer).toString("hex");
+  async hashPassword(password: string, salt: string): Promise<string> {
+    const data = new TextEncoder().encode(password + salt);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+    return Buffer.from(hashBuffer).toString("hex");
+  }
 }
