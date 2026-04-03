@@ -506,15 +506,15 @@ describe("routeMessage -> RoomManager -> GameRegistry -> Postgres", () => {
     it("reconnecting player receives current game_state and others get player_reconnected", async () => {
       const { deps, rm, registry, connManager } = makeEnv();
       const alice = mockWs("alice");
-      const bob   = mockWs("bob");
+      const bob = mockWs("bob");
       const carol = mockWs("carol");
-      const dave  = mockWs("dave");
+      const dave = mockWs("dave");
 
       const r = await send(alice, { type: "create_game" }, deps);
       const gameId = r.find((m: any) => m.type === "game_created")!.gameId;
-      await send(bob,   { type: "join_game", gameId }, deps);
+      await send(bob, { type: "join_game", gameId }, deps);
       await send(carol, { type: "join_game", gameId }, deps);
-      await send(dave,  { type: "join_game", gameId }, deps);
+      await send(dave, { type: "join_game", gameId }, deps);
       await send(alice, { type: "start_game" }, deps);
 
       // Simulate disconnect then reconnect with a new WS
@@ -548,7 +548,10 @@ describe("routeMessage -> RoomManager -> GameRegistry -> Postgres", () => {
       // All other players receive player_reconnected
       for (const p of [bob, carol, dave]) {
         expect(
-          p.msgs.some((m: any) => m.type === "player_reconnected" && m.playerId === "alice"),
+          p.msgs.some(
+            (m: any) =>
+              m.type === "player_reconnected" && m.playerId === "alice",
+          ),
         ).toBe(true);
       }
     });
@@ -556,15 +559,15 @@ describe("routeMessage -> RoomManager -> GameRegistry -> Postgres", () => {
     it("reconnecting player can continue playing cards on their new socket", async () => {
       const { deps, rm, registry } = makeEnv();
       const alice = mockWs("alice");
-      const bob   = mockWs("bob");
+      const bob = mockWs("bob");
       const carol = mockWs("carol");
-      const dave  = mockWs("dave");
+      const dave = mockWs("dave");
 
       const r = await send(alice, { type: "create_game" }, deps);
       const gameId = r.find((m: any) => m.type === "game_created")!.gameId;
-      await send(bob,   { type: "join_game", gameId }, deps);
+      await send(bob, { type: "join_game", gameId }, deps);
       await send(carol, { type: "join_game", gameId }, deps);
-      await send(dave,  { type: "join_game", gameId }, deps);
+      await send(dave, { type: "join_game", gameId }, deps);
       await send(alice, { type: "start_game" }, deps);
 
       // Reconnect alice with a new socket
@@ -579,9 +582,9 @@ describe("routeMessage -> RoomManager -> GameRegistry -> Postgres", () => {
       // Pick the right socket for the current player
       const allSockets = new Map([
         ["alice", alice2],
-        ["bob",   bob],
+        ["bob", bob],
         ["carol", carol],
-        ["dave",  dave],
+        ["dave", dave],
       ]);
       const playerWs = allSockets.get(currentPlayer.id)!;
       const validCards = getValidCards(currentPlayer.id, gs);

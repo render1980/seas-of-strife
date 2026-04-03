@@ -27,7 +27,8 @@ export function scheduleBotTurns(
 
   const minDelay = Number(process.env.BOT_DELAY_MIN ?? 1000);
   const maxDelay = Number(process.env.BOT_DELAY_MAX ?? 2000);
-  const delay = minDelay + Math.floor(Math.random() * Math.max(1, maxDelay - minDelay));
+  const delay =
+    minDelay + Math.floor(Math.random() * Math.max(1, maxDelay - minDelay));
 
   setTimeout(async () => {
     try {
