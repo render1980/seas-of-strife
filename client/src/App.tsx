@@ -4,7 +4,7 @@ import { connectWebSocket, sendWsMessage } from "./api/ws";
 import LoginForm from "./components/LoginForm";
 import MainScreen from "./components/MainScreen";
 import NewGameLobby from "./components/NewGameLobby";
-import type { ServerMessage, LobbyPlayer } from "./types/messages";
+import type { ServerMessage, LobbyPlayer } from "../../shared/types/messages";
 
 type Screen = "main" | "new-game-lobby";
 

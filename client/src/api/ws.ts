@@ -1,4 +1,4 @@
-import type { ServerMessage } from "../types/messages";
+import type { ServerMessage } from "../../../shared/types/messages";
 
 export function connectWebSocket(
   token: string,
