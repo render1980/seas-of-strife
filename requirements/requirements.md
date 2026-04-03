@@ -26,12 +26,13 @@ After authentication user will be forwarded to the main screen.
 
 ## Starting or joining a game on the main screen
 
-The main screen is the second screen where user can:
-- start new game or
-- join a game or
-- see profile
+The main screen is the second screen with the 4 items as a list on the center of the screen (keep letters case as-is):
+- New Game
+- Join Game
+- Profile
+- Log out
 
-Those should be separate icons.
+Above them should be "S.O.S." abbreviature with a game-alike (e.g. Doom) style.
 
 When create a new game:
 1. User presses 'new game' button (or icon)
