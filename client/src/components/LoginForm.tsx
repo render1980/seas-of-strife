@@ -30,7 +30,7 @@ export default function LoginForm({ onLogin }: Props) {
     <div className="min-h-screen bg-slate-900 flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <h1 className="text-4xl font-bold text-center text-white mb-2 tracking-wide">
-          Seas of Strife
+          S.O.S
         </h1>
         <p className="text-center text-slate-400 mb-8 text-sm">
           Enter your credentials to play
@@ -59,7 +59,7 @@ export default function LoginForm({ onLogin }: Props) {
               className="rounded-lg bg-slate-700 text-white px-4 py-2.5 text-sm outline-none
                          border border-transparent focus:border-blue-500 transition
                          disabled:opacity-50 placeholder:text-slate-500"
-              placeholder="Your login"
+              placeholder="Login"
             />
           </div>
 
@@ -82,7 +82,7 @@ export default function LoginForm({ onLogin }: Props) {
               className="rounded-lg bg-slate-700 text-white px-4 py-2.5 text-sm outline-none
                          border border-transparent focus:border-blue-500 transition
                          disabled:opacity-50 placeholder:text-slate-500"
-              placeholder="Your password"
+              placeholder="Password"
             />
           </div>
 

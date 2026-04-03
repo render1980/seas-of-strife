@@ -1,3 +1,37 @@
+@import url("https://fonts.googleapis.com/css2?family=Black+Ops+One&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.sos-title {
+  font-family: "Black Ops One", cursive;
+  font-size: clamp(4rem, 12vw, 9rem);
+  color: #936763;
+  letter-spacing: 0.15em;
+  line-height: 1;
+  user-select: none;
+}
+
+.menu-item {
+  font-family: "Black Ops One", cursive;
+  font-size: clamp(1.25rem, 3vw, 1.75rem);
+  letter-spacing: 0.08em;
+  color: #e2e8f0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.4em 1.2em;
+  transition:
+    color 0.15s ease,
+    text-shadow 0.15s ease;
+}
+
+.menu-item:hover {
+  color: #ff2200;
+  text-shadow: 0 0 18px #ff220099;
+}
+
+.menu-item:active {
+  color: #cc1100;
+}
