@@ -1,5 +1,8 @@
 import type { GameState } from "../types/types";
-import type { SanitizedGameState, SanitizedPlayer } from "../types/messages";
+import type {
+  SanitizedGameState,
+  SanitizedPlayer,
+} from "../../../shared/types/messages";
 
 /**
  * Create a per-player view of GameState: own hand visible, others hidden.

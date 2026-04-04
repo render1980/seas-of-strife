@@ -1,8 +1,8 @@
 import type { ServerWebSocket } from "bun";
-import type { WsData, WsDeps } from "./handler";
-import type { ClientMessage } from "../../types/messages";
-import { sanitizeStateForPlayer } from "../sanitize";
+import type { ClientMessage } from "../../../../shared/types/messages";
 import { scheduleBotTurns } from "../lobby/botScheduler";
+import { sanitizeStateForPlayer } from "../sanitize";
+import type { WsData, WsDeps } from "./handler";
 
 function send(ws: ServerWebSocket<WsData>, msg: object): void {
   ws.send(JSON.stringify(msg));

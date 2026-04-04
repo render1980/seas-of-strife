@@ -1,6 +1,6 @@
 import type { ServerWebSocket } from "bun";
 import type { GameRegistry } from "../../game/GameRegistry";
-import type { ServerMessage } from "../../types/messages";
+import type { ServerMessage } from "../../../../shared/types/messages";
 import type { PlayerState } from "../../types/types";
 import type { ConnectionManager } from "../ConnectionManager";
 import type { SessionStore } from "../auth/sessions";
