@@ -30,14 +30,13 @@ export default function NewGameLobby({
   return (
     <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center px-4">
       <h1 className="sos-title">S.O.S</h1>
-      <p className="text-slate-400 mt-2 mb-8 text-xs tracking-widest uppercase">
-        Start New Game
-      </p>
 
       {/* Game ID */}
-      <div className="flex items-center gap-3 bg-slate-800 rounded-xl px-6 py-3 mb-8">
+      <div className="flex items-center gap-3 bg-slate-800 rounded-xl px-6 py-3 mb-6">
         <span className="text-slate-400 text-sm">Game ID</span>
-        <span className="text-white font-mono text-2xl font-bold">{gameId}</span>
+        <span className="text-white font-mono text-2xl font-bold">
+          {gameId}
+        </span>
         <button
           onClick={copyGameId}
           className="ml-2 text-xs text-slate-400 hover:text-white border border-slate-600
@@ -45,6 +44,27 @@ export default function NewGameLobby({
         >
           {copied ? "Copied!" : "Copy"}
         </button>
+      </div>
+
+      {/* Player list */}
+      <div className="w-full max-w-xs mb-6">
+        <p className="text-slate-500 text-xs uppercase tracking-widest mb-3 text-center">
+          Players ({players.length} / 6)
+        </p>
+        <ul className="flex flex-col gap-2">
+          {players.map((p) => (
+            <li
+              key={p.id}
+              className="flex items-center gap-3 bg-slate-800 rounded-lg px-4 py-2"
+            >
+              <span className="w-2 h-2 rounded-full bg-green-400 shrink-0" />
+              <span className="text-white text-sm">{p.name}</span>
+              {p.id === creatorId && (
+                <span className="ml-auto text-xs text-slate-500">host</span>
+              )}
+            </li>
+          ))}
+        </ul>
       </div>
 
       {/* Action buttons */}

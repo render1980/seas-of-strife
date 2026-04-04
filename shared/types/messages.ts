@@ -142,3 +142,5 @@ export type ServerMessage =
   | GameStoppedMsg
   | PlayerDisconnectedMsg
   | PlayerReconnectedMsg;
+
+export type { RoundWinner } from "../../server/src/types/types";

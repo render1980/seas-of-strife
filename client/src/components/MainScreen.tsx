@@ -6,7 +6,11 @@ interface Props {
   onLogout: () => void;
 }
 
-export default function MainScreen({ session: _session, onNewGame, onLogout }: Props) {
+export default function MainScreen({
+  session: _session,
+  onNewGame,
+  onLogout,
+}: Props) {
   return (
     <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center">
       <h1 className="sos-title">S.O.S</h1>

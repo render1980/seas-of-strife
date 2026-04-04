@@ -4,9 +4,15 @@ import { connectWebSocket, sendWsMessage } from "./api/ws";
 import LoginForm from "./components/LoginForm";
 import MainScreen from "./components/MainScreen";
 import NewGameLobby from "./components/NewGameLobby";
-import type { ServerMessage, LobbyPlayer } from "../../shared/types/messages";
+import GameScreen from "./components/GameScreen";
+import type {
+  ServerMessage,
+  LobbyPlayer,
+  SanitizedGameState,
+  RoundWinner,
+} from "../../shared/types/messages";
 
-type Screen = "main" | "new-game-lobby";
+type Screen = "main" | "new-game-lobby" | "game";
 
 interface LobbyState {
   gameId: number;
@@ -14,10 +20,17 @@ interface LobbyState {
   creatorId: string;
 }
 
+type RoundScores = { playerId: string; tricksTaken: number }[];
+
 export default function App() {
   const [session, setSession] = useState<Session | null>(getSession);
   const [screen, setScreen] = useState<Screen>("main");
   const [lobbyState, setLobbyState] = useState<LobbyState | null>(null);
+  const [gameState, setGameState] = useState<SanitizedGameState | null>(null);
+  const [winners, setWinners] = useState<RoundWinner[] | null>(null);
+  const [lastRoundScores, setLastRoundScores] = useState<RoundScores | null>(
+    null,
+  );
   const wsRef = useRef<WebSocket | null>(null);
 
   const closeWs = useCallback(() => {
@@ -30,6 +43,9 @@ export default function App() {
   const goToMain = useCallback(() => {
     closeWs();
     setLobbyState(null);
+    setGameState(null);
+    setWinners(null);
+    setLastRoundScores(null);
     setScreen("main");
   }, [closeWs]);
 
@@ -43,6 +59,24 @@ export default function App() {
             creatorId: msg.creatorId,
           });
           setScreen("new-game-lobby");
+          break;
+        case "game_state":
+          setGameState(msg.state);
+          setScreen("game");
+          break;
+        case "trick_resolved":
+          setGameState(msg.state);
+          setScreen("game");
+          break;
+        case "round_ended":
+          setGameState(msg.state);
+          setLastRoundScores(msg.scores);
+          setScreen("game");
+          break;
+        case "game_ended":
+          setGameState(msg.state);
+          setWinners(msg.winners);
+          setScreen("game");
           break;
         case "game_stopped":
           goToMain();
@@ -72,11 +106,27 @@ export default function App() {
 
   function handleStopOrLeave() {
     if (wsRef.current) {
-      const msgType = lobbyState && session?.login === lobbyState.creatorId
-        ? "stop_game"
-        : "leave_game";
+      const msgType =
+        lobbyState && session?.login === lobbyState.creatorId
+          ? "stop_game"
+          : "leave_game";
       sendWsMessage(wsRef.current, { type: msgType });
     }
+    goToMain();
+  }
+
+  function handlePlayCard(card: number) {
+    if (wsRef.current)
+      sendWsMessage(wsRef.current, { type: "play_card", card });
+  }
+
+  function handleSelectLeader(playerIndex: number) {
+    if (wsRef.current)
+      sendWsMessage(wsRef.current, { type: "select_leader", playerIndex });
+  }
+
+  function handleLeaveGame() {
+    if (wsRef.current) sendWsMessage(wsRef.current, { type: "leave_game" });
     goToMain();
   }
 
@@ -117,7 +167,26 @@ export default function App() {
     );
   }
 
+  if (screen === "game" && gameState) {
+    return (
+      <GameScreen
+        state={gameState}
+        myLogin={session.login}
+        winners={winners}
+        lastRoundScores={lastRoundScores}
+        onPlayCard={handlePlayCard}
+        onSelectLeader={handleSelectLeader}
+        onLeave={handleLeaveGame}
+        onDismissRoundEnd={() => setLastRoundScores(null)}
+      />
+    );
+  }
+
   return (
-    <MainScreen session={session} onNewGame={handleNewGame} onLogout={handleLogout} />
+    <MainScreen
+      session={session}
+      onNewGame={handleNewGame}
+      onLogout={handleLogout}
+    />
   );
 }
