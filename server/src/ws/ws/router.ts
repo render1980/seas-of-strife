@@ -28,13 +28,12 @@ export async function routeMessage(
     switch (msg.type) {
       // ----- Lobby -----
       case "create_game": {
-        const gameId = roomManager.createRoom(playerId, login, ws);
-        send(ws, { type: "game_created", gameId });
-        // Also send lobby update (creator is the only player)
-        const room = roomManager.getRoom(gameId)!;
+        const room = roomManager.createRoom(playerId, login, ws);
+        send(ws, { type: "game_created", gameId: room.gameId });
+        // Send lobby update (creator is the only player for now)
         roomManager.broadcast(room, {
           type: "lobby_update",
-          gameId,
+          gameId: room.gameId,
           players: [{ id: playerId, name: login }],
           creatorId: playerId,
         });

@@ -100,6 +100,17 @@ export default function App() {
     });
   }
 
+  function handleJoinGame(gameId: number) {
+    if (!session) return;
+    closeWs();
+    setScreen("new-game-lobby");
+    const ws = connectWebSocket(session.token, handleMessage, goToMain);
+    wsRef.current = ws;
+    ws.addEventListener("open", () => {
+      sendWsMessage(ws, { type: "join_game", gameId });
+    });
+  }
+
   function handleStartGame() {
     if (wsRef.current) sendWsMessage(wsRef.current, { type: "start_game" });
   }
@@ -186,6 +197,7 @@ export default function App() {
     <MainScreen
       session={session}
       onNewGame={handleNewGame}
+      onJoinGame={handleJoinGame}
       onLogout={handleLogout}
     />
   );

@@ -2,23 +2,18 @@ import type {
   SanitizedGameState,
   RoundWinner,
 } from "../../../shared/types/messages";
+import {
+  SUIT_DEFINITIONS,
+  SUIT_MAX,
+  getSuitFromCard,
+} from "../../../shared/types/cards";
+import type { Color } from "../../../server/src/types/types";
 
 // ---------------------------------------------------------------------------
-// Suit helpers (client-side copy of stable server data)
+// Suit helpers
 // ---------------------------------------------------------------------------
 
-const SUITS = [
-  { color: "orange", min: 0, max: 10 },
-  { color: "red", min: 11, max: 20 },
-  { color: "gray", min: 21, max: 29 },
-  { color: "blue", min: 31, max: 38 },
-  { color: "green", min: 41, max: 47 },
-  { color: "purple", min: 51, max: 56 },
-  { color: "teal", min: 61, max: 65 },
-  { color: "dark_red", min: 71, max: 74 },
-] as const;
-
-type SuitColor = (typeof SUITS)[number]["color"];
+type SuitColor = Color;
 
 const CARD_BG: Record<SuitColor, string> = {
   orange: "bg-orange-500",
@@ -32,16 +27,13 @@ const CARD_BG: Record<SuitColor, string> = {
 };
 
 function cardInfo(v: number) {
-  for (const s of SUITS) {
-    if (v >= s.min && v <= s.max) {
-      return {
-        color: s.color as SuitColor,
-        rank: v - s.min,
-        isSpecial: v === s.max,
-      };
-    }
-  }
-  return { color: "gray" as SuitColor, rank: v, isSpecial: false };
+  const color = getSuitFromCard(v);
+  const suit = SUIT_DEFINITIONS.find((s) => s.color === color)!;
+  return {
+    color,
+    rank: v - suit.min,
+    isSpecial: v === SUIT_MAX[color],
+  };
 }
 
 // ---------------------------------------------------------------------------

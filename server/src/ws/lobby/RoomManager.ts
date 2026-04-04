@@ -45,7 +45,7 @@ export class RoomManager {
     playerId: string,
     playerName: string,
     ws: ServerWebSocket<WsData>,
-  ): number {
+  ): Room {
     if (this.playerRoom.has(playerId)) {
       throw new Error("Already in a game");
     }
@@ -60,7 +60,7 @@ export class RoomManager {
     };
     this.rooms.set(gameId, room);
     this.playerRoom.set(playerId, gameId);
-    return gameId;
+    return room;
   }
 
   joinRoom(
