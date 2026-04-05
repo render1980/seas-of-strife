@@ -347,7 +347,7 @@ function otherPlayerHands(
                 <span className="ml-1 text-slate-500 text-[10px]">[bot]</span>
               )}
             </span>
-            <div className="flex gap-2 text-[10px] text-slate-400">
+            <div className="flex gap-2 text-[20px] text-slate-400">
               <span title="Cards">🂠 {player.handSize}</span>
               <span title="Tricks">⚑ {player.tricksTakenPerRound}</span>
             </div>
@@ -376,9 +376,15 @@ function myHand(
   return (
     <div className="shrink-0 bg-slate-800/90 border-t border-slate-700 px-4 py-4">
       <div className="flex items-center justify-between mb-3">
-        <span className="text-slate-400 text-xs uppercase tracking-wider">
-          {me?.name ?? "You"}
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="text-slate-400 text-xs uppercase tracking-wider">
+            {me?.name ?? "You"}
+          </span>
+          <div className="flex gap-2 text-[20px] text-slate-400">
+            <span title="Cards">🂠 {me?.handSize ?? 0}</span>
+            <span title="Tricks">⚑ {me?.tricksTakenPerRound ?? 0}</span>
+          </div>
+        </div>
         {isMyTurn && (
           <span className="text-green-400 text-xs font-semibold animate-pulse">
             ▶ Your turn

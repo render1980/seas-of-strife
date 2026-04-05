@@ -56,7 +56,7 @@ export default function App() {
   const goToMain = useCallback(() => {
     closeWs();
     setLobbyState(null);
-    setGameState(null);
+    // setGameState(null);
     setWinners(null);
     setLastRoundScores(null);
     setScreen("main");
@@ -215,6 +215,7 @@ export default function App() {
   return (
     <MainScreen
       session={session}
+      state={gameState}
       onNewGame={handleNewGame}
       onJoinGame={handleJoinGame}
       onLogout={handleLogout}

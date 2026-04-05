@@ -1,8 +1,10 @@
 import { useState, FormEvent } from "react";
 import { Session } from "../api/auth";
+import { SanitizedGameState } from "../../../shared/types/messages";
 
 interface Props {
   session: Session;
+  state: SanitizedGameState | null;
   onNewGame: () => void;
   onJoinGame: (gameId: number) => void;
   onLogout: () => void;
@@ -10,6 +12,7 @@ interface Props {
 
 export default function MainScreen({
   session: _session,
+  state,
   onNewGame,
   onJoinGame,
   onLogout,
@@ -17,6 +20,8 @@ export default function MainScreen({
   const [showJoin, setShowJoin] = useState(false);
   const [joinInput, setJoinInput] = useState("");
   const [joinError, setJoinError] = useState("");
+
+  console.log(`state: ${JSON.stringify(state)}`);
 
   function handleJoinSubmit(e: FormEvent) {
     e.preventDefault();
@@ -36,19 +41,29 @@ export default function MainScreen({
       <h1 className="sos-title">S.O.S.</h1>
 
       <nav className="mt-16 flex flex-col items-center gap-2">
-        <button onClick={onNewGame} className="menu-item">
-          New Game
-        </button>
-        <button
-          onClick={() => {
-            setShowJoin(true);
-            setJoinError("");
-            setJoinInput("");
-          }}
-          className="menu-item"
-        >
-          Join Game
-        </button>
+        {state && state.phase !== "game-end" && (
+          <button onClick={onNewGame} className="menu-item">
+            Continue
+          </button>
+        )}
+        {!state && (
+          <>
+            <button onClick={onNewGame} className="menu-item">
+              New Game
+            </button>
+            <button
+              onClick={() => {
+                setShowJoin(true);
+                setJoinError("");
+                setJoinInput("");
+              }}
+              className="menu-item"
+            >
+              Join Game
+            </button>
+          </>
+        )}
+
         <button className="menu-item opacity-40 cursor-not-allowed" disabled>
           Profile
         </button>
