@@ -3,14 +3,14 @@
  *
  * Uses a lightweight MockWs that captures outbound messages so we can assert
  * on what routeMessage() sends back — no real server or network required.
- * The full stack (RoomManager → GameRegistry → GameRepository → Postgres) is
+ * The full stack (GameManager → GameRegistry → GameRepository → Postgres) is
  * exercised for every test that touches game state.
  */
 import { beforeEach, describe, expect, it } from "bun:test";
 import type { ServerWebSocket } from "bun";
 import { routeMessage } from "../../src/ws/ws/router";
 import type { WsData, WsDeps } from "../../src/ws/ws/handler";
-import { RoomManager } from "../../src/ws/lobby/RoomManager";
+import { GameManager } from "../../src/ws/lobby/GameManager";
 import { GameRegistry } from "../../src/game/GameRegistry";
 import { GameRepository } from "../../src/db/repositories/GameRepository";
 import { ConnectionManager } from "../../src/ws/ConnectionManager";
@@ -48,14 +48,14 @@ function makeEnv() {
   const registry = new GameRegistry(repo);
   const connManager = new ConnectionManager(registry);
   const sessionStore = new SessionStore();
-  const rm = new RoomManager(registry, connManager, sessionStore);
+  const gm = new GameManager(registry, connManager, sessionStore);
   const deps: WsDeps = {
-    roomManager: rm,
+    gameManager: gm,
     gameRegistry: registry,
     connectionManager: connManager,
     sessionStore,
   };
-  return { sql, repo, registry, connManager, rm, deps };
+  return { sql, repo, registry, connManager, gm, deps };
 }
 
 /** Send a JSON message through routeMessage and return all new outbound msgs. */
@@ -75,7 +75,7 @@ beforeEach(truncateAllTables);
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
-describe("routeMessage -> RoomManager -> GameRegistry -> Postgres", () => {
+describe("routeMessage -> GameManager -> GameRegistry -> Postgres", () => {
   // -----------------------------------------------------------------------
   // Error paths
   // -----------------------------------------------------------------------
@@ -139,7 +139,7 @@ describe("routeMessage -> RoomManager -> GameRegistry -> Postgres", () => {
       expect(lobby.creatorId).toBe("alice");
     });
 
-    it("join_game broadcasts lobby_update to all players in room", async () => {
+    it("join_game broadcasts lobby_update to all players in game", async () => {
       const { deps } = makeEnv();
       const alice = mockWs("alice");
       const bob = mockWs("bob");
@@ -187,7 +187,7 @@ describe("routeMessage -> RoomManager -> GameRegistry -> Postgres", () => {
       expect(aliceLobby.players.map((p: any) => p.id)).not.toContain("bob");
     });
 
-    it("leave_game by creator dissolves room and sends game_stopped to all", async () => {
+    it("leave_game by creator dissolves game and sends game_stopped to all", async () => {
       const { deps } = makeEnv();
       const alice = mockWs("alice");
       const bob = mockWs("bob");
@@ -230,8 +230,8 @@ describe("routeMessage -> RoomManager -> GameRegistry -> Postgres", () => {
   // start_game
   // -----------------------------------------------------------------------
   describe("start_game", () => {
-    it("transitions room to started and sends game_state to all players", async () => {
-      const { deps, rm } = makeEnv();
+    it("transitions game to started and sends game_state to all players", async () => {
+      const { deps, gm } = makeEnv();
       const alice = mockWs("alice");
       const bob = mockWs("bob");
 
@@ -248,7 +248,7 @@ describe("routeMessage -> RoomManager -> GameRegistry -> Postgres", () => {
 
       expect(alice.msgs.some((m: any) => m.type === "game_state")).toBe(true);
       expect(bob.msgs.some((m: any) => m.type === "game_state")).toBe(true);
-      expect(rm.getRoom(gameId)!.started).toBe(true);
+      expect(gm.getGame(gameId)!.started).toBe(true);
     });
 
     it("sends error when non-creator tries to start", async () => {
@@ -504,7 +504,7 @@ describe("routeMessage -> RoomManager -> GameRegistry -> Postgres", () => {
   // -----------------------------------------------------------------------
   describe("reconnect flow", () => {
     it("reconnecting player receives current game_state and others get player_reconnected", async () => {
-      const { deps, rm, registry, connManager } = makeEnv();
+      const { deps, gm, registry, connManager } = makeEnv();
       const alice = mockWs("alice");
       const bob = mockWs("bob");
       const carol = mockWs("carol");
@@ -519,7 +519,7 @@ describe("routeMessage -> RoomManager -> GameRegistry -> Postgres", () => {
 
       // Simulate disconnect then reconnect with a new WS
       const alice2 = mockWs("alice");
-      rm.updatePlayerSocket("alice", alice2.ws);
+      gm.updatePlayerSocket("alice", alice2.ws);
       connManager.playerConnected(gameId, "alice");
 
       // Replicate what createWsHandlers.open does on reconnect
@@ -531,7 +531,7 @@ describe("routeMessage -> RoomManager -> GameRegistry -> Postgres", () => {
           state: sanitizeStateForPlayer(state, "alice"),
         }),
       );
-      rm.broadcast(rm.getRoom(gameId)!, {
+      gm.broadcast(gm.getGame(gameId)!, {
         type: "player_reconnected",
         playerId: "alice",
       });
@@ -557,7 +557,7 @@ describe("routeMessage -> RoomManager -> GameRegistry -> Postgres", () => {
     });
 
     it("reconnecting player can continue playing cards on their new socket", async () => {
-      const { deps, rm, registry } = makeEnv();
+      const { deps, gm, registry } = makeEnv();
       const alice = mockWs("alice");
       const bob = mockWs("bob");
       const carol = mockWs("carol");
@@ -572,7 +572,7 @@ describe("routeMessage -> RoomManager -> GameRegistry -> Postgres", () => {
 
       // Reconnect alice with a new socket
       const alice2 = mockWs("alice");
-      rm.updatePlayerSocket("alice", alice2.ws);
+      gm.updatePlayerSocket("alice", alice2.ws);
 
       // Find valid move for current player; if it's alice, play via new socket
       const engine = registry.getGame(gameId)!;

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "bun:test";
 import type { ServerWebSocket } from "bun";
-import { RoomManager } from "../../src/ws/lobby/RoomManager";
+import { GameManager } from "../../src/ws/lobby/GameManager";
 import { GameRegistry } from "../../src/game/GameRegistry";
 import { GameRepository } from "../../src/db/repositories/GameRepository";
 import { ConnectionManager } from "../../src/ws/ConnectionManager";
@@ -37,8 +37,8 @@ function makeEnv() {
   const registry = new GameRegistry(repo);
   const connManager = new ConnectionManager(registry);
   const sessionStore = new SessionStore();
-  const rm = new RoomManager(registry, connManager, sessionStore);
-  return { sql, repo, registry, connManager, rm };
+  const gm = new GameManager(registry, connManager, sessionStore);
+  return { sql, repo, registry, connManager, gm };
 }
 
 beforeEach(truncateAllTables);
@@ -46,46 +46,46 @@ beforeEach(truncateAllTables);
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
-describe("RoomManager -> GameRegistry -> Postgres", () => {
+describe("GameManager -> GameRegistry -> Postgres", () => {
   // -----------------------------------------------------------------------
-  // createRoom
+  // createGame
   // -----------------------------------------------------------------------
-  describe("createRoom", () => {
+  describe("createGame", () => {
     it("returns a gameId and tracks the creator", () => {
-      const { rm } = makeEnv();
+      const { gm } = makeEnv();
       const { ws } = mockWs("alice");
 
-      const gameId = rm.createRoom("alice", "Alice", ws);
+      const game = gm.createGame("alice", "Alice", ws);
 
-      expect(typeof gameId).toBe("number");
-      expect(gameId).toBeGreaterThan(0);
-      expect(rm.getPlayerGameId("alice")).toBe(gameId);
-      expect(rm.getRoom(gameId)).toBeDefined();
+      expect(typeof game.gameId).toBe("number");
+      expect(game.gameId).toBeGreaterThan(0);
+      expect(gm.getPlayerGameId("alice")).toBe(game.gameId);
+      expect(gm.getGame(game.gameId)).toBeDefined();
     });
 
-    it("throws when player is already in a room", () => {
-      const { rm } = makeEnv();
+    it("throws when player is already in a game", () => {
+      const { gm } = makeEnv();
       const { ws: ws1 } = mockWs("alice");
       const { ws: ws2 } = mockWs("alice");
 
-      rm.createRoom("alice", "Alice", ws1);
-      expect(() => rm.createRoom("alice", "Alice", ws2)).toThrow(
+      gm.createGame("alice", "Alice", ws1);
+      expect(() => gm.createGame("alice", "Alice", ws2)).toThrow(
         "Already in a game",
       );
     });
   });
 
   // -----------------------------------------------------------------------
-  // joinRoom
+  // joinGame
   // -----------------------------------------------------------------------
-  describe("joinRoom", () => {
-    it("adds player to room and broadcasts lobby_update to everyone", () => {
-      const { rm } = makeEnv();
+  describe("joinGame", () => {
+    it("adds player to game and broadcasts lobby_update to everyone", () => {
+      const { gm } = makeEnv();
       const alice = mockWs("alice");
       const bob = mockWs("bob");
 
-      const gameId = rm.createRoom("alice", "Alice", alice.ws);
-      rm.joinRoom(gameId, "bob", "Bob", bob.ws);
+      const game = gm.createGame("alice", "Alice", alice.ws);
+      gm.joinGame(game.gameId, "bob", "Bob", bob.ws);
 
       // Both alice and bob should have received a lobby_update
       const aliceLobby = alice.msgs.find((m) => m.type === "lobby_update");
@@ -98,49 +98,49 @@ describe("RoomManager -> GameRegistry -> Postgres", () => {
       expect(playerIds).toContain("bob");
     });
 
-    it("throws when joining a non-existent room", () => {
-      const { rm } = makeEnv();
+    it("throws when joining a non-existent game", () => {
+      const { gm } = makeEnv();
       const { ws } = mockWs("bob");
-      expect(() => rm.joinRoom(9999, "bob", "Bob", ws)).toThrow(
+      expect(() => gm.joinGame(9999, "bob", "Bob", ws)).toThrow(
         "Game not found",
       );
     });
 
-    it("throws when player is already in a room", () => {
-      const { rm } = makeEnv();
+    it("throws when player is already in a game", () => {
+      const { gm } = makeEnv();
       const alice = mockWs("alice");
       const alice2 = mockWs("alice");
 
-      const gameId = rm.createRoom("alice", "Alice", alice.ws);
-      expect(() => rm.joinRoom(gameId, "alice", "Alice", alice2.ws)).toThrow(
-        "Already in a game",
-      );
+      const game = gm.createGame("alice", "Alice", alice.ws);
+      expect(() =>
+        gm.joinGame(game.gameId, "alice", "Alice", alice2.ws),
+      ).toThrow("Already in a game");
     });
   });
 
   // -----------------------------------------------------------------------
-  // leaveRoom
+  // leaveGame
   // -----------------------------------------------------------------------
-  describe("leaveRoom", () => {
+  describe("leaveGame", () => {
     it("non-creator leave broadcasts updated lobby to remaining players", () => {
-      const { rm } = makeEnv();
+      const { gm } = makeEnv();
       const alice = mockWs("alice");
       const bob = mockWs("bob");
       const carol = mockWs("carol");
 
-      const gameId = rm.createRoom("alice", "Alice", alice.ws);
-      rm.joinRoom(gameId, "bob", "Bob", bob.ws);
-      rm.joinRoom(gameId, "carol", "Carol", carol.ws);
+      const game = gm.createGame("alice", "Alice", alice.ws);
+      gm.joinGame(game.gameId, "bob", "Bob", bob.ws);
+      gm.joinGame(game.gameId, "carol", "Carol", carol.ws);
 
       // Clear accumulated messages so we can inspect just the leave effect
       alice.msgs.length = 0;
       bob.msgs.length = 0;
       carol.msgs.length = 0;
 
-      rm.leaveRoom("bob");
+      gm.leaveGame("bob");
 
-      expect(rm.getRoom(gameId)).toBeDefined();
-      expect(rm.getPlayerGameId("bob")).toBeUndefined();
+      expect(gm.getGame(game.gameId)).toBeDefined();
+      expect(gm.getPlayerGameId("bob")).toBeUndefined();
 
       // Remaining players get a lobby_update without bob
       const aliceLobby = alice.msgs.find((m) => m.type === "lobby_update");
@@ -149,26 +149,26 @@ describe("RoomManager -> GameRegistry -> Postgres", () => {
       expect(remainingIds).not.toContain("bob");
     });
 
-    it("creator leave dissolves room and broadcasts game_stopped to others", () => {
-      const { rm } = makeEnv();
+    it("creator leave dissolves game and broadcasts game_stopped to others", () => {
+      const { gm } = makeEnv();
       const alice = mockWs("alice");
       const bob = mockWs("bob");
 
-      const gameId = rm.createRoom("alice", "Alice", alice.ws);
-      rm.joinRoom(gameId, "bob", "Bob", bob.ws);
+      const game = gm.createGame("alice", "Alice", alice.ws);
+      gm.joinGame(game.gameId, "bob", "Bob", bob.ws);
 
       bob.msgs.length = 0;
 
-      rm.leaveRoom("alice");
+      gm.leaveGame("alice");
 
-      expect(rm.getRoom(gameId)).toBeUndefined();
-      expect(rm.getPlayerGameId("alice")).toBeUndefined();
+      expect(gm.getGame(game.gameId)).toBeUndefined();
+      expect(gm.getPlayerGameId("alice")).toBeUndefined();
       expect(bob.msgs.some((m) => m.type === "game_stopped")).toBe(true);
     });
 
-    it("is a no-op when called for a player not in any room", () => {
-      const { rm } = makeEnv();
-      expect(() => rm.leaveRoom("nobody")).not.toThrow();
+    it("is a no-op when called for a player not in any game", () => {
+      const { gm } = makeEnv();
+      expect(() => gm.leaveGame("nobody")).not.toThrow();
     });
   });
 
@@ -177,17 +177,17 @@ describe("RoomManager -> GameRegistry -> Postgres", () => {
   // -----------------------------------------------------------------------
   describe("startGame", () => {
     it("fills bots to reach 4 players when only the creator is present", async () => {
-      const { rm, registry, sql } = makeEnv();
+      const { gm, registry, sql } = makeEnv();
       const alice = mockWs("alice");
 
-      const gameId = rm.createRoom("alice", "Alice", alice.ws);
-      await rm.startGame("alice");
+      const game = gm.createGame("alice", "Alice", alice.ws);
+      await gm.startGame("alice");
 
-      // Room is marked started
-      expect(rm.getRoom(gameId)!.started).toBe(true);
+      // Game is marked started
+      expect(gm.getGame(game.gameId)!.started).toBe(true);
 
       // Engine is live in registry
-      const engine = registry.getGame(gameId);
+      const engine = registry.getGame(game.gameId);
       expect(engine).not.toBeNull();
 
       const state = engine!.getGameState();
@@ -196,57 +196,58 @@ describe("RoomManager -> GameRegistry -> Postgres", () => {
       expect(state.phase).toBe("trick-playing");
 
       // DB row reflects started state
-      const rows = await sql`SELECT phase FROM games WHERE game_id = ${gameId}`;
+      const rows =
+        await sql`SELECT phase FROM games WHERE game_id = ${game.gameId}`;
       expect(rows[0]?.phase).toBe("trick-playing");
     });
 
     it("uses all human players when 4 are present — no bots added", async () => {
-      const { rm, registry } = makeEnv();
+      const { gm, registry } = makeEnv();
       const alice = mockWs("alice");
       const bob = mockWs("bob");
       const carol = mockWs("carol");
       const dave = mockWs("dave");
 
-      const gameId = rm.createRoom("alice", "Alice", alice.ws);
-      rm.joinRoom(gameId, "bob", "Bob", bob.ws);
-      rm.joinRoom(gameId, "carol", "Carol", carol.ws);
-      rm.joinRoom(gameId, "dave", "Dave", dave.ws);
+      const game = gm.createGame("alice", "Alice", alice.ws);
+      gm.joinGame(game.gameId, "bob", "Bob", bob.ws);
+      gm.joinGame(game.gameId, "carol", "Carol", carol.ws);
+      gm.joinGame(game.gameId, "dave", "Dave", dave.ws);
 
-      await rm.startGame("alice");
+      await gm.startGame("alice");
 
-      const state = registry.getGame(gameId)!.getGameState();
+      const state = registry.getGame(game.gameId)!.getGameState();
       expect(state.players.every((p) => !p.isBot)).toBe(true);
     });
 
     it("sends game_state to each human player after start", async () => {
-      const { rm } = makeEnv();
+      const { gm } = makeEnv();
       const alice = mockWs("alice");
       const bob = mockWs("bob");
 
-      const gameId = rm.createRoom("alice", "Alice", alice.ws);
-      rm.joinRoom(gameId, "bob", "Bob", bob.ws);
+      const game = gm.createGame("alice", "Alice", alice.ws);
+      gm.joinGame(game.gameId, "bob", "Bob", bob.ws);
 
       alice.msgs.length = 0;
       bob.msgs.length = 0;
 
-      await rm.startGame("alice");
+      await gm.startGame("alice");
 
       expect(alice.msgs.some((m) => m.type === "game_state")).toBe(true);
       expect(bob.msgs.some((m) => m.type === "game_state")).toBe(true);
     });
 
     it("hands are sanitized — each player sees only their own cards", async () => {
-      const { rm } = makeEnv();
+      const { gm } = makeEnv();
       const alice = mockWs("alice");
       const bob = mockWs("bob");
 
-      const gameId = rm.createRoom("alice", "Alice", alice.ws);
-      rm.joinRoom(gameId, "bob", "Bob", bob.ws);
+      const game = gm.createGame("alice", "Alice", alice.ws);
+      gm.joinGame(game.gameId, "bob", "Bob", bob.ws);
 
       alice.msgs.length = 0;
       bob.msgs.length = 0;
 
-      await rm.startGame("alice");
+      await gm.startGame("alice");
 
       const aliceState = alice.msgs.find((m) => m.type === "game_state")!.state;
       const bobState = bob.msgs.find((m) => m.type === "game_state")!.state;
@@ -266,43 +267,43 @@ describe("RoomManager -> GameRegistry -> Postgres", () => {
     });
 
     it("throws when called by a non-creator", async () => {
-      const { rm } = makeEnv();
+      const { gm } = makeEnv();
       const alice = mockWs("alice");
       const bob = mockWs("bob");
 
-      const gameId = rm.createRoom("alice", "Alice", alice.ws);
-      rm.joinRoom(gameId, "bob", "Bob", bob.ws);
+      const game = gm.createGame("alice", "Alice", alice.ws);
+      gm.joinGame(game.gameId, "bob", "Bob", bob.ws);
 
-      await expect(rm.startGame("bob")).rejects.toThrow(
+      await expect(gm.startGame("bob")).rejects.toThrow(
         "Only creator can start",
       );
     });
 
     it("throws when game is already started", async () => {
-      const { rm } = makeEnv();
+      const { gm } = makeEnv();
       const { ws } = mockWs("alice");
 
-      rm.createRoom("alice", "Alice", ws);
-      await rm.startGame("alice");
-      await expect(rm.startGame("alice")).rejects.toThrow(
+      gm.createGame("alice", "Alice", ws);
+      await gm.startGame("alice");
+      await expect(gm.startGame("alice")).rejects.toThrow(
         "Game already started",
       );
     });
 
-    it("throws when player is not in any room", async () => {
-      const { rm } = makeEnv();
-      await expect(rm.startGame("ghost")).rejects.toThrow("Not in a game");
+    it("throws when player is not in any game", async () => {
+      const { gm } = makeEnv();
+      await expect(gm.startGame("ghost")).rejects.toThrow("Not in a game");
     });
 
-    it("rejects joinRoom after game is started", async () => {
-      const { rm } = makeEnv();
+    it("rejects joinGame after game is started", async () => {
+      const { gm } = makeEnv();
       const alice = mockWs("alice");
       const late = mockWs("late");
 
-      const gameId = rm.createRoom("alice", "Alice", alice.ws);
-      await rm.startGame("alice");
+      const game = gm.createGame("alice", "Alice", alice.ws);
+      await gm.startGame("alice");
 
-      expect(() => rm.joinRoom(gameId, "late", "Late", late.ws)).toThrow(
+      expect(() => gm.joinGame(game.gameId, "late", "Late", late.ws)).toThrow(
         "Game already started",
       );
     });
@@ -312,41 +313,41 @@ describe("RoomManager -> GameRegistry -> Postgres", () => {
   // stopGame
   // -----------------------------------------------------------------------
   describe("stopGame", () => {
-    it("broadcasts game_stopped and removes game from registry and room map", async () => {
-      const { rm, registry } = makeEnv();
+    it("broadcasts game_stopped and removes game from registry and game map", async () => {
+      const { gm, registry } = makeEnv();
       const alice = mockWs("alice");
       const bob = mockWs("bob");
 
-      const gameId = rm.createRoom("alice", "Alice", alice.ws);
-      rm.joinRoom(gameId, "bob", "Bob", bob.ws);
-      await rm.startGame("alice");
+      const game = gm.createGame("alice", "Alice", alice.ws);
+      gm.joinGame(game.gameId, "bob", "Bob", bob.ws);
+      await gm.startGame("alice");
 
       alice.msgs.length = 0;
       bob.msgs.length = 0;
 
-      rm.stopGame("alice");
+      gm.stopGame("alice");
 
       expect(alice.msgs.some((m) => m.type === "game_stopped")).toBe(true);
       expect(bob.msgs.some((m) => m.type === "game_stopped")).toBe(true);
-      expect(rm.getRoom(gameId)).toBeUndefined();
-      expect(registry.getGame(gameId)).toBeNull();
+      expect(gm.getGame(game.gameId)).toBeUndefined();
+      expect(registry.getGame(game.gameId)).toBeNull();
     });
 
     it("throws when non-creator tries to stop", async () => {
-      const { rm } = makeEnv();
+      const { gm } = makeEnv();
       const alice = mockWs("alice");
       const bob = mockWs("bob");
 
-      const gameId = rm.createRoom("alice", "Alice", alice.ws);
-      rm.joinRoom(gameId, "bob", "Bob", bob.ws);
-      await rm.startGame("alice");
+      const game = gm.createGame("alice", "Alice", alice.ws);
+      gm.joinGame(game.gameId, "bob", "Bob", bob.ws);
+      await gm.startGame("alice");
 
-      expect(() => rm.stopGame("bob")).toThrow("Only creator can stop");
+      expect(() => gm.stopGame("bob")).toThrow("Only creator can stop");
     });
 
-    it("throws when player is not in any room", () => {
-      const { rm } = makeEnv();
-      expect(() => rm.stopGame("ghost")).toThrow("Not in a game");
+    it("throws when player is not in any game", () => {
+      const { gm } = makeEnv();
+      expect(() => gm.stopGame("ghost")).toThrow("Not in a game");
     });
   });
 });

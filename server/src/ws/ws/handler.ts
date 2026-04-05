@@ -1,5 +1,5 @@
 import type { ServerWebSocket } from "bun";
-import type { RoomManager } from "../lobby/RoomManager";
+import type { GameManager } from "../lobby/GameManager";
 import type { GameRegistry } from "../../game/GameRegistry";
 import type { ConnectionManager } from "../ConnectionManager";
 import type { SessionStore } from "../auth/sessions";
@@ -16,7 +16,7 @@ export interface WsData {
 }
 
 export interface WsDeps {
-  roomManager: RoomManager;
+  gameManager: GameManager;
   gameRegistry: GameRegistry;
   connectionManager: ConnectionManager;
   sessionStore: SessionStore;
@@ -32,12 +32,12 @@ export function createWsHandlers(deps: WsDeps) {
       console.log(`[WS] Connected: ${login}`);
 
       // Check if player was in a game (reconnection)
-      const gameId = deps.roomManager.getPlayerGameId(playerId);
+      const gameId = deps.gameManager.getPlayerGameId(playerId);
       if (gameId !== undefined) {
-        deps.roomManager.updatePlayerSocket(playerId, ws);
+        deps.gameManager.updatePlayerSocket(playerId, ws);
 
-        const room = deps.roomManager.getRoom(gameId);
-        if (room?.started) {
+        const game = deps.gameManager.getGame(gameId);
+        if (game?.started) {
           deps.connectionManager.playerConnected(gameId, playerId);
 
           // Send current game state
@@ -51,7 +51,7 @@ export function createWsHandlers(deps: WsDeps) {
           }
 
           // Notify others
-          deps.roomManager.broadcast(room, {
+          deps.gameManager.broadcast(game, {
             type: "player_reconnected",
             playerId,
           });
@@ -67,17 +67,17 @@ export function createWsHandlers(deps: WsDeps) {
       const { playerId, login } = ws.data;
       console.log(`[WS] Disconnected: ${login}`);
 
-      const gameId = deps.roomManager.getPlayerGameId(playerId);
+      const gameId = deps.gameManager.getPlayerGameId(playerId);
       if (gameId !== undefined) {
-        const room = deps.roomManager.getRoom(gameId);
-        if (room?.started) {
+        const game = deps.gameManager.getGame(gameId);
+        if (game?.started) {
           deps.connectionManager.playerDisconnected(gameId, playerId);
-          deps.roomManager.broadcast(room, {
+          deps.gameManager.broadcast(game, {
             type: "player_disconnected",
             playerId,
           });
         } else {
-          deps.roomManager.leaveRoom(playerId);
+          deps.gameManager.leaveGame(playerId);
         }
       }
     },

@@ -39,7 +39,14 @@ export default function MainScreen({
         <button onClick={onNewGame} className="menu-item">
           New Game
         </button>
-        <button onClick={() => { setShowJoin(true); setJoinError(""); setJoinInput(""); }} className="menu-item">
+        <button
+          onClick={() => {
+            setShowJoin(true);
+            setJoinError("");
+            setJoinInput("");
+          }}
+          className="menu-item"
+        >
           Join Game
         </button>
         <button className="menu-item opacity-40 cursor-not-allowed" disabled>
@@ -75,7 +82,10 @@ export default function MainScreen({
                 min={1}
                 autoFocus
                 value={joinInput}
-                onChange={(e) => { setJoinInput(e.target.value); setJoinError(""); }}
+                onChange={(e) => {
+                  setJoinInput(e.target.value);
+                  setJoinError("");
+                }}
                 placeholder="Game ID"
                 className="rounded-lg bg-slate-700 text-white text-center text-xl font-mono
                            px-4 py-3 outline-none border border-transparent

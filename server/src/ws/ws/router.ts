@@ -22,18 +22,18 @@ export async function routeMessage(
   }
 
   const { playerId, login } = ws.data;
-  const { roomManager, gameRegistry, connectionManager } = deps;
+  const { gameManager, gameRegistry, connectionManager } = deps;
 
   try {
     switch (msg.type) {
       // ----- Lobby -----
       case "create_game": {
-        const room = roomManager.createRoom(playerId, login, ws);
-        send(ws, { type: "game_created", gameId: room.gameId });
+        const game = gameManager.createGame(playerId, login, ws);
+        send(ws, { type: "game_created", gameId: game.gameId });
         // Send lobby update (creator is the only player for now)
-        roomManager.broadcast(room, {
+        gameManager.broadcast(game, {
           type: "lobby_update",
-          gameId: room.gameId,
+          gameId: game.gameId,
           players: [{ id: playerId, name: login }],
           creatorId: playerId,
         });
@@ -41,34 +41,34 @@ export async function routeMessage(
       }
 
       case "join_game": {
-        roomManager.joinRoom(msg.gameId, playerId, login, ws);
+        gameManager.joinGame(msg.gameId, playerId, login, ws);
         break;
       }
 
       case "leave_game": {
-        roomManager.leaveRoom(playerId);
+        gameManager.leaveGame(playerId);
         break;
       }
 
       case "stop_game": {
-        roomManager.stopGame(playerId);
+        gameManager.stopGame(playerId);
         break;
       }
 
       case "start_game": {
-        await roomManager.startGame(playerId);
+        await gameManager.startGame(playerId);
 
         // Check if first player is a bot → schedule bot turn
-        const gameId = roomManager.getPlayerGameId(playerId);
+        const gameId = gameManager.getPlayerGameId(playerId);
         if (gameId !== undefined) {
           const engine = gameRegistry.getGame(gameId);
-          const room = roomManager.getRoom(gameId);
-          if (engine && room) {
+          const game = gameManager.getGame(gameId);
+          if (engine && game) {
             scheduleBotTurns(
               gameId,
               engine,
-              room,
-              roomManager,
+              game,
+              gameManager,
               connectionManager,
             );
           }
@@ -78,7 +78,7 @@ export async function routeMessage(
 
       // ----- In-game -----
       case "play_card": {
-        const gameId = roomManager.getPlayerGameId(playerId);
+        const gameId = gameManager.getPlayerGameId(playerId);
         if (gameId === undefined) {
           send(ws, { type: "error", message: "Not in a game" });
           return;
@@ -90,8 +90,8 @@ export async function routeMessage(
           return;
         }
 
-        const room = roomManager.getRoom(gameId);
-        if (!room) return;
+        const game = gameManager.getGame(gameId);
+        if (!game) return;
 
         const result = await engine.playCard(playerId, msg.card);
         if (!result.success) {
@@ -103,7 +103,7 @@ export async function routeMessage(
 
         if (result.gameEnded) {
           const winners = engine.getRoundWinners();
-          roomManager.broadcastPerPlayer(room, (pid) => ({
+          gameManager.broadcastPerPlayer(game, (pid) => ({
             type: "game_ended",
             winners,
             state: sanitizeStateForPlayer(state, pid),
@@ -115,7 +115,7 @@ export async function routeMessage(
         if (result.roundEnded) {
           const lastRound = state.roundResults[state.roundResults.length - 1];
           if (lastRound) {
-            roomManager.broadcastPerPlayer(room, (pid) => ({
+            gameManager.broadcastPerPlayer(game, (pid) => ({
               type: "round_ended",
               roundNumber: lastRound.round,
               scores: lastRound.scores,
@@ -125,8 +125,8 @@ export async function routeMessage(
           scheduleBotTurns(
             gameId,
             engine,
-            room,
-            roomManager,
+            game,
+            gameManager,
             connectionManager,
           );
           break;
@@ -134,7 +134,7 @@ export async function routeMessage(
 
         if (result.trickResolved) {
           const trick = state.currentTrick;
-          roomManager.broadcastPerPlayer(room, (pid) => ({
+          gameManager.broadcastPerPlayer(game, (pid) => ({
             type: "trick_resolved",
             trickTakerIdx: trick.trickTakerIdx ?? 0,
             hasSpecialPower: trick.winnerHasSpecialPower ?? false,
@@ -147,8 +147,8 @@ export async function routeMessage(
               scheduleBotTurns(
                 gameId,
                 engine,
-                room,
-                roomManager,
+                game,
+                gameManager,
                 connectionManager,
               );
             }
@@ -156,8 +156,8 @@ export async function routeMessage(
             scheduleBotTurns(
               gameId,
               engine,
-              room,
-              roomManager,
+              game,
+              gameManager,
               connectionManager,
             );
           }
@@ -165,13 +165,13 @@ export async function routeMessage(
         }
 
         // Normal state update
-        roomManager.broadcastGameState(room, state);
-        scheduleBotTurns(gameId, engine, room, roomManager, connectionManager);
+        gameManager.broadcastGameState(game, state);
+        scheduleBotTurns(gameId, engine, game, gameManager, connectionManager);
         break;
       }
 
       case "select_leader": {
-        const gameId = roomManager.getPlayerGameId(playerId);
+        const gameId = gameManager.getPlayerGameId(playerId);
         if (gameId === undefined) {
           send(ws, { type: "error", message: "Not in a game" });
           return;
@@ -183,8 +183,8 @@ export async function routeMessage(
           return;
         }
 
-        const room = roomManager.getRoom(gameId);
-        if (!room) return;
+        const game = gameManager.getGame(gameId);
+        if (!game) return;
 
         const result = await engine.selectNextLeader(playerId, msg.playerIndex);
         if (!result.success) {
@@ -193,8 +193,8 @@ export async function routeMessage(
         }
 
         const state = engine.getGameState();
-        roomManager.broadcastGameState(room, state);
-        scheduleBotTurns(gameId, engine, room, roomManager, connectionManager);
+        gameManager.broadcastGameState(game, state);
+        scheduleBotTurns(gameId, engine, game, gameManager, connectionManager);
         break;
       }
 

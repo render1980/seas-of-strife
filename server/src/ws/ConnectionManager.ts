@@ -35,7 +35,7 @@ export class ConnectionManager {
 
   /**
    * Register a callback that fires after auto-play
-   * so the RoomManager can broadcast results.
+   * so the GameManager can broadcast results.
    */
   setOnAutoPlay(cb: OnAutoPlayCallback): void {
     this.onAutoPlay = cb;
@@ -175,7 +175,7 @@ export class ConnectionManager {
         return;
       }
 
-      // Notify listeners (RoomManager) so results are broadcast
+      // Notify listeners (GameManager) so results are broadcast
       if (this.onAutoPlay) {
         await this.onAutoPlay(gameId, playerId);
       }

@@ -1,13 +1,16 @@
 import type { ServerWebSocket } from "bun";
+import type {
+  LobbyPlayer,
+  ServerMessage,
+} from "../../../../shared/types/messages";
 import type { GameRegistry } from "../../game/GameRegistry";
-import type { ServerMessage } from "../../../../shared/types/messages";
-import type { PlayerState } from "../../types/types";
+import type { GameState, PlayerState } from "../../types/types";
 import type { ConnectionManager } from "../ConnectionManager";
 import type { SessionStore } from "../auth/sessions";
 import { sanitizeStateForPlayer } from "../sanitize";
 import type { WsData } from "../ws/handler";
 
-interface Room {
+interface Game {
   gameId: number;
   creatorId: string;
   /** Connected players (may include disconnected slots during game) */
@@ -17,10 +20,10 @@ interface Room {
   started: boolean;
 }
 
-export class RoomManager {
-  private rooms: Map<number, Room> = new Map();
+export class GameManager {
+  private games: Map<number, Game> = new Map();
   /** Reverse lookup: playerId → gameId */
-  private playerRoom: Map<string, number> = new Map();
+  private playerToGame: Map<string, number> = new Map();
   private nextGameId = 1;
 
   private gameRegistry: GameRegistry;
@@ -41,102 +44,102 @@ export class RoomManager {
   // Lobby operations
   // ---------------------------------------------------------------------------
 
-  createRoom(
+  createGame(
     playerId: string,
     playerName: string,
     ws: ServerWebSocket<WsData>,
-  ): Room {
-    if (this.playerRoom.has(playerId)) {
+  ): Game {
+    if (this.playerToGame.has(playerId)) {
       throw new Error("Already in a game");
     }
 
     const gameId = this.nextGameId++;
-    const room: Room = {
+    const game: Game = {
       gameId,
       creatorId: playerId,
       players: new Map([[playerId, ws]]),
       playerNames: new Map([[playerId, playerName]]),
       started: false,
     };
-    this.rooms.set(gameId, room);
-    this.playerRoom.set(playerId, gameId);
-    return room;
+    this.games.set(gameId, game);
+    this.playerToGame.set(playerId, gameId);
+    return game;
   }
 
-  joinRoom(
+  joinGame(
     gameId: number,
     playerId: string,
     playerName: string,
     ws: ServerWebSocket<WsData>,
   ): void {
-    const room = this.rooms.get(gameId);
-    if (!room) throw new Error("Game not found");
-    if (room.started) throw new Error("Game already started");
-    if (room.players.size >= 6) throw new Error("Game is full");
-    if (this.playerRoom.has(playerId)) throw new Error("Already in a game");
+    const game = this.games.get(gameId);
+    if (!game) throw new Error("Game not found");
+    if (game.started) throw new Error("Game already started");
+    if (game.players.size >= 6) throw new Error("Game is full");
+    if (this.playerToGame.has(playerId)) throw new Error("Already in a game");
 
-    room.players.set(playerId, ws);
-    room.playerNames.set(playerId, playerName);
-    this.playerRoom.set(playerId, gameId);
-    this.broadcastLobbyUpdate(room);
+    game.players.set(playerId, ws);
+    game.playerNames.set(playerId, playerName);
+    this.playerToGame.set(playerId, gameId);
+    this.broadcastLobbyUpdate(game);
   }
 
-  leaveRoom(playerId: string): void {
-    const gameId = this.playerRoom.get(playerId);
+  leaveGame(playerId: string): void {
+    const gameId = this.playerToGame.get(playerId);
     if (gameId === undefined) return;
 
-    const room = this.rooms.get(gameId);
-    if (!room) {
-      this.playerRoom.delete(playerId);
+    const game = this.games.get(gameId);
+    if (!game) {
+      this.playerToGame.delete(playerId);
       return;
     }
 
-    if (!room.started) {
-      const dissolve = playerId === room.creatorId || room.players.size === 1;
+    if (!game.started) {
+      const dissolve = playerId === game.creatorId || game.players.size === 1;
 
       if (dissolve) {
         // Broadcast to everyone (including the leaving player) before cleanup
-        this.broadcast(room, { type: "game_stopped" });
-        this.destroyRoom(gameId);
+        this.broadcast(game, { type: "game_stopped" });
+        this.deleteGame(gameId);
       } else {
         // Non-creator: remove then update remaining players
-        room.players.delete(playerId);
-        room.playerNames.delete(playerId);
-        this.playerRoom.delete(playerId);
-        this.broadcastLobbyUpdate(room);
+        game.players.delete(playerId);
+        game.playerNames.delete(playerId);
+        this.playerToGame.delete(playerId);
+        this.broadcastLobbyUpdate(game);
       }
     }
     // If game is started, disconnection is handled by ConnectionManager
   }
 
   stopGame(requesterId: string): void {
-    const gameId = this.playerRoom.get(requesterId);
+    const gameId = this.playerToGame.get(requesterId);
     if (gameId === undefined) throw new Error("Not in a game");
 
-    const room = this.rooms.get(gameId);
-    if (!room) throw new Error("Game not found");
-    if (room.creatorId !== requesterId)
+    const game = this.games.get(gameId);
+    if (!game) throw new Error("Game not found");
+    if (game.creatorId !== requesterId)
       throw new Error("Only creator can stop");
 
-    this.broadcast(room, { type: "game_stopped" });
+    this.broadcast(game, { type: "game_stopped" });
     this.connectionManager.cleanupGame(gameId);
     this.gameRegistry.removeGame(gameId);
-    this.destroyRoom(gameId);
+    this.deleteGame(gameId);
   }
 
   async startGame(requesterId: string): Promise<void> {
-    const gameId = this.playerRoom.get(requesterId);
+    const gameId = this.playerToGame.get(requesterId);
     if (gameId === undefined) throw new Error("Not in a game");
 
-    const room = this.rooms.get(gameId);
-    if (!room) throw new Error("Game not found");
-    if (room.creatorId !== requesterId)
+    const game = this.games.get(gameId);
+    if (!game) throw new Error("Game not found");
+    if (game.creatorId !== requesterId)
       throw new Error("Only creator can start");
-    if (room.started) throw new Error("Game already started");
+    if (game.started) throw new Error("Game already started");
 
     // Build player list, fill bots to reach MIN_PLAYERS
     const players: PlayerState[] = [];
-    for (const [id, name] of room.playerNames) {
+    for (const [id, name] of game.playerNames) {
       players.push({
         id,
         name,
@@ -161,15 +164,15 @@ export class RoomManager {
     // Create engine and start game
     const engine = await this.gameRegistry.createGame(gameId, players);
     await engine.startGame();
-    room.started = true;
+    game.started = true;
 
     // Register connections
-    for (const [pid] of room.players) {
+    for (const [pid] of game.players) {
       this.connectionManager.playerConnected(gameId, pid);
     }
 
     // Send sanitized state to each player
-    this.broadcastGameState(room, engine.getGameState());
+    this.broadcastGameState(game, engine.getGameState());
   }
 
   // ---------------------------------------------------------------------------
@@ -183,56 +186,53 @@ export class RoomManager {
     playerId: string,
     ws: ServerWebSocket<WsData>,
   ): number | null {
-    const gameId = this.playerRoom.get(playerId);
+    const gameId = this.playerToGame.get(playerId);
     if (gameId === undefined) return null;
 
-    const room = this.rooms.get(gameId);
-    if (!room) return null;
+    const game = this.games.get(gameId);
+    if (!game) return null;
 
-    room.players.set(playerId, ws);
+    game.players.set(playerId, ws);
     return gameId;
   }
 
   getPlayerGameId(playerId: string): number | undefined {
-    return this.playerRoom.get(playerId);
+    return this.playerToGame.get(playerId);
   }
 
-  getRoom(gameId: number): Room | undefined {
-    return this.rooms.get(gameId);
+  getGame(gameId: number): Game | undefined {
+    return this.games.get(gameId);
   }
 
   /**
-   * Send sanitized game state to each player in the room.
+   * Send sanitized game state to each player in the game.
    */
-  broadcastGameState(
-    room: Room,
-    state: import("../../types/types").GameState,
-  ): void {
-    for (const [pid, ws] of room.players) {
+  broadcastGameState(game: Game, state: GameState): void {
+    for (const [pid, ws] of game.players) {
       const sanitized = sanitizeStateForPlayer(state, pid);
       this.send(ws, { type: "game_state", state: sanitized });
     }
   }
 
   /**
-   * Send the same message to all players in a room.
+   * Send the same message to all players in a game.
    */
-  broadcast(room: Room, msg: ServerMessage): void {
+  broadcast(game: Game, msg: ServerMessage): void {
     const raw = JSON.stringify(msg);
-    for (const ws of room.players.values()) {
+    for (const ws of game.players.values()) {
       ws.send(raw);
     }
   }
 
   /**
-   * Send a per-player sanitized message to all players in a room.
+   * Send a per-player sanitized message to all players in a game.
    * The callback receives the playerId and should return the message for that player.
    */
   broadcastPerPlayer(
-    room: Room,
+    game: Game,
     buildMsg: (playerId: string) => ServerMessage,
   ): void {
-    for (const [pid, ws] of room.players) {
+    for (const [pid, ws] of game.players) {
       this.send(ws, buildMsg(pid));
     }
   }
@@ -245,34 +245,34 @@ export class RoomManager {
   // Internal
   // ---------------------------------------------------------------------------
 
-  private broadcastLobbyUpdate(room: Room): void {
-    const players: import("../../types/messages").LobbyPlayer[] = [];
-    for (const [id, name] of room.playerNames) {
+  private broadcastLobbyUpdate(game: Game): void {
+    const players: LobbyPlayer[] = [];
+    for (const [id, name] of game.playerNames) {
       players.push({ id, name });
     }
-    this.broadcast(room, {
+    this.broadcast(game, {
       type: "lobby_update",
-      gameId: room.gameId,
+      gameId: game.gameId,
       players,
-      creatorId: room.creatorId,
+      creatorId: game.creatorId,
     });
   }
 
-  private destroyRoom(gameId: number): void {
-    const room = this.rooms.get(gameId);
-    if (!room) return;
+  private deleteGame(gameId: number): void {
+    const game = this.games.get(gameId);
+    if (!game) return;
 
-    for (const pid of room.players.keys()) {
-      this.playerRoom.delete(pid);
+    for (const pid of game.players.keys()) {
+      this.playerToGame.delete(pid);
     }
-    this.rooms.delete(gameId);
+    this.games.delete(gameId);
   }
 
   /**
    * Remove a player from tracking (after game ends / player fully leaves).
    */
   removePlayerTracking(playerId: string): void {
-    this.playerRoom.delete(playerId);
+    this.playerToGame.delete(playerId);
   }
 
   /**

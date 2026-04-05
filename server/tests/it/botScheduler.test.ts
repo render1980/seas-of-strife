@@ -9,7 +9,7 @@
 //  */
 // import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 // import type { ServerWebSocket } from "bun";
-// import { RoomManager } from "../../src/server/lobby/RoomManager";
+// import { GameManager } from "../../src/server/lobby/GameManager";
 // import { GameRegistry } from "../../src/game/GameRegistry";
 // import { GameRepository } from "../../src/db/repositories/GameRepository";
 // import { ConnectionManager } from "../../src/server/ConnectionManager";
@@ -36,8 +36,8 @@
 //   const registry = new GameRegistry(repo);
 //   const connManager = new ConnectionManager(registry);
 //   const sessionStore = new SessionStore();
-//   const rm = new RoomManager(registry, connManager, sessionStore);
-//   return { sql, repo, registry, connManager, rm };
+//   const gm = new GameManager(registry, connManager, sessionStore);
+//   return { sql, repo, registry, connManager, gm };
 // }
 
 // /**
@@ -48,15 +48,15 @@
 // async function codriveToGameEnd(
 //   gameId: number,
 //   engine: import("../../src/game/engine").GameEngine,
-//   rm: RoomManager,
+//   gm: GameManager,
 //   connManager: ConnectionManager,
 //   timeoutMs = 8_000,
 // ): Promise<boolean> {
 //   const stopAt = Date.now() + timeoutMs;
 
 //   // Initial kick — if the first player is a bot this starts the chain
-//   const kickRoom = rm.getRoom(gameId);
-//   if (kickRoom) scheduleBotTurns(gameId, engine, kickRoom, rm, connManager);
+//   const kickGame = gm.getGame(gameId);
+//   if (kickGame) scheduleBotTurns(gameId, engine, kickGame, gm, connManager);
 
 //   while (engine.getPhase() !== "game-end" && Date.now() < stopAt) {
 //     const state = engine.getGameState();
@@ -68,8 +68,8 @@
 //       } else if (state.phase === "trick-playing") {
 //         await engine.autoPlayCard(current.id);
 //       }
-//       const room = rm.getRoom(gameId);
-//       if (room) scheduleBotTurns(gameId, engine, room, rm, connManager);
+//       const game = gm.getGame(gameId);
+//       if (game) scheduleBotTurns(gameId, engine, game, gm, connManager);
 //     }
 //     // Yield so queued 0ms setTimeout callbacks (bot plays) can fire
 //     await new Promise((r) => setTimeout(r, 10));
@@ -93,15 +93,15 @@
 //   it(
 //     "bots + co-driven human plays drive a 1-human + 3-bot game to game-end",
 //     async () => {
-//       const { rm, registry, connManager } = makeEnv();
+//       const { gm, registry, connManager } = makeEnv();
 //       const alice = mockWs("alice");
 
-//       const gameId = rm.createRoom("alice", "Alice", alice.ws);
-//       await rm.startGame("alice");
+//       const gameId = gm.createGame("alice", "Alice", alice.ws);
+//       await gm.startGame("alice");
 
 //       const engine = registry.getGame(gameId)!;
 
-//       const finished = await codriveToGameEnd(gameId, engine, rm, connManager);
+//       const finished = await codriveToGameEnd(gameId, engine, gm, connManager);
 
 //       expect(finished).toBe(true);
 //       expect(engine.getPhase()).toBe("game-end");
@@ -112,17 +112,17 @@
 //   it(
 //     "bots broadcast state updates to connected players during the game",
 //     async () => {
-//       const { rm, registry, connManager } = makeEnv();
+//       const { gm, registry, connManager } = makeEnv();
 //       const alice = mockWs("alice");
 
-//       const gameId = rm.createRoom("alice", "Alice", alice.ws);
-//       await rm.startGame("alice");
+//       const gameId = gm.createGame("alice", "Alice", alice.ws);
+//       await gm.startGame("alice");
 
 //       alice.msgs.length = 0; // clear start-game messages
 
 //       const engine = registry.getGame(gameId)!;
 
-//       await codriveToGameEnd(gameId, engine, rm, connManager);
+//       await codriveToGameEnd(gameId, engine, gm, connManager);
 
 //       // Alice should have received state updates throughout
 //       const stateTypes = [
@@ -140,22 +140,22 @@
 //   );
 
 //   it("does nothing when the current player is human (all-human lobby)", async () => {
-//     const { rm, registry, connManager } = makeEnv();
+//     const { gm, registry, connManager } = makeEnv();
 //     const players = ["alice", "bob", "carol", "dave"].map(mockWs);
 //     const [alice, bob, carol, dave] = players;
 
-//     const gameId = rm.createRoom("alice", "Alice", alice.ws);
-//     rm.joinRoom(gameId, "bob", "Bob", bob.ws);
-//     rm.joinRoom(gameId, "carol", "Carol", carol.ws);
-//     rm.joinRoom(gameId, "dave", "Dave", dave.ws);
-//     await rm.startGame("alice");
+//     const gameId = gm.createGame("alice", "Alice", alice.ws);
+//     gm.joinGame(gameId, "bob", "Bob", bob.ws);
+//     gm.joinGame(gameId, "carol", "Carol", carol.ws);
+//     gm.joinGame(gameId, "dave", "Dave", dave.ws);
+//     await gm.startGame("alice");
 
 //     const engine = registry.getGame(gameId)!;
-//     const room = rm.getRoom(gameId)!;
+//     const game = gm.getGame(gameId)!;
 //     const phaseBefore = engine.getPhase();
 
 //     // scheduleBotTurns should be a no-op — all players are human
-//     scheduleBotTurns(gameId, engine, room, rm, connManager);
+//     scheduleBotTurns(gameId, engine, game, gm, connManager);
 
 //     // Give any accidental setTimeout a chance to fire
 //     await new Promise((r) => setTimeout(r, 150));
@@ -166,17 +166,17 @@
 //   it(
 //     "game_ended message is broadcast to connected players when game finishes",
 //     async () => {
-//       const { rm, registry, connManager } = makeEnv();
+//       const { gm, registry, connManager } = makeEnv();
 //       const alice = mockWs("alice");
 
-//       const gameId = rm.createRoom("alice", "Alice", alice.ws);
-//       await rm.startGame("alice");
+//       const gameId = gm.createGame("alice", "Alice", alice.ws);
+//       await gm.startGame("alice");
 
 //       alice.msgs.length = 0;
 
 //       const engine = registry.getGame(gameId)!;
 
-//       await codriveToGameEnd(gameId, engine, rm, connManager);
+//       await codriveToGameEnd(gameId, engine, gm, connManager);
 
 //       expect(
 //         alice.msgs.some((m: any) => m.type === "game_ended"),

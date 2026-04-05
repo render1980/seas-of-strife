@@ -4,7 +4,7 @@ import { GameRegistry } from "./src/game/GameRegistry";
 import { ConnectionManager } from "./src/ws/ConnectionManager";
 import { AuthHandler } from "./src/ws/auth/handlers";
 import { SessionStore } from "./src/ws/auth/sessions";
-import { RoomManager } from "./src/ws/lobby/RoomManager";
+import { GameManager } from "./src/ws/lobby/GameManager";
 import { scheduleBotTurns } from "./src/ws/lobby/botScheduler";
 import { createWsHandlers, type WsData } from "./src/ws/ws/handler";
 
@@ -19,25 +19,25 @@ const gameRepository = new GameRepository(sql);
 const authHandler = new AuthHandler(gameRepository);
 const gameRegistry = new GameRegistry(gameRepository);
 const connectionManager = new ConnectionManager(gameRegistry);
-const roomManager = new RoomManager(
+const gameManager = new GameManager(
   gameRegistry,
   connectionManager,
   sessionStore,
 );
-roomManager.seedNextGameId(await gameRepository.getMaxGameId());
+gameManager.seedNextGameId(await gameRepository.getMaxGameId());
 
 // Wire auto-play broadcast: after 30s timeout fires, broadcast updated state
 connectionManager.setOnAutoPlay(async (gameId, playerId) => {
   const engine = gameRegistry.getGame(gameId);
-  const room = roomManager.getRoom(gameId);
-  if (!engine || !room) return;
+  const game = gameManager.getGame(gameId);
+  if (!engine || !game) return;
 
   const state = engine.getGameState();
-  roomManager.broadcastGameState(room, state);
-  scheduleBotTurns(gameId, engine, room, roomManager, connectionManager);
+  gameManager.broadcastGameState(game, state);
+  scheduleBotTurns(gameId, engine, game, gameManager, connectionManager);
 });
 
-const wsDeps = { roomManager, gameRegistry, connectionManager, sessionStore };
+const wsDeps = { gameManager, gameRegistry, connectionManager, sessionStore };
 const wsHandlers = createWsHandlers(wsDeps);
 
 // ---------------------------------------------------------------------------

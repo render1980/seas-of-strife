@@ -1,5 +1,5 @@
 import type { GameEngine } from "../../game/engine";
-import type { RoomManager } from "./RoomManager";
+import type { GameManager } from "./GameManager";
 import type { ConnectionManager } from "../ConnectionManager";
 import { sanitizeStateForPlayer } from "../sanitize";
 
@@ -13,11 +13,11 @@ import { sanitizeStateForPlayer } from "../sanitize";
 export function scheduleBotTurns(
   gameId: number,
   engine: GameEngine,
-  room: ReturnType<RoomManager["getRoom"]>,
-  roomManager: RoomManager,
+  game: ReturnType<GameManager["getGame"]>,
+  gameManager: GameManager,
   connectionManager: ConnectionManager,
 ): void {
-  if (!room) return;
+  if (!game) return;
 
   const state = engine.getGameState();
   if (state.phase !== "trick-playing" && !state.awaitingLeaderSelection) return;
@@ -46,13 +46,13 @@ export function scheduleBotTurns(
         const result = await engine.selectNextLeader(botPlayer.id, randomIndex);
         if (result.success) {
           const updatedState = engine.getGameState();
-          roomManager.broadcastGameState(room, updatedState);
+          gameManager.broadcastGameState(game, updatedState);
           // Chain: check if the new leader is also a bot
           scheduleBotTurns(
             gameId,
             engine,
-            room,
-            roomManager,
+            game,
+            gameManager,
             connectionManager,
           );
         }
@@ -68,12 +68,12 @@ export function scheduleBotTurns(
       if (!moveResult.success) return;
 
       const updatedState = engine.getGameState();
-      const updatedRoom = roomManager.getRoom(gameId);
-      if (!updatedRoom) return;
+      const updatedGame = gameManager.getGame(gameId);
+      if (!updatedGame) return;
 
       if (moveResult.gameEnded) {
         const winners = engine.getRoundWinners();
-        roomManager.broadcastPerPlayer(updatedRoom, (pid) => ({
+        gameManager.broadcastPerPlayer(updatedGame, (pid) => ({
           type: "game_ended",
           winners,
           state: sanitizeStateForPlayer(updatedState, pid),
@@ -86,7 +86,7 @@ export function scheduleBotTurns(
         const lastRound =
           updatedState.roundResults[updatedState.roundResults.length - 1];
         if (lastRound) {
-          roomManager.broadcastPerPlayer(updatedRoom, (pid) => ({
+          gameManager.broadcastPerPlayer(updatedGame, (pid) => ({
             type: "round_ended",
             roundNumber: lastRound.round,
             scores: lastRound.scores,
@@ -96,8 +96,8 @@ export function scheduleBotTurns(
         scheduleBotTurns(
           gameId,
           engine,
-          updatedRoom,
-          roomManager,
+          updatedGame,
+          gameManager,
           connectionManager,
         );
         return;
@@ -105,7 +105,7 @@ export function scheduleBotTurns(
 
       if (moveResult.trickResolved) {
         const trick = updatedState.currentTrick;
-        roomManager.broadcastPerPlayer(updatedRoom, (pid) => ({
+        gameManager.broadcastPerPlayer(updatedGame, (pid) => ({
           type: "trick_resolved",
           trickTakerIdx: trick.trickTakerIdx ?? 0,
           hasSpecialPower: trick.winnerHasSpecialPower ?? false,
@@ -114,20 +114,20 @@ export function scheduleBotTurns(
         scheduleBotTurns(
           gameId,
           engine,
-          updatedRoom,
-          roomManager,
+          updatedGame,
+          gameManager,
           connectionManager,
         );
         return;
       }
 
       // Normal card played, advance
-      roomManager.broadcastGameState(updatedRoom, updatedState);
+      gameManager.broadcastGameState(updatedGame, updatedState);
       scheduleBotTurns(
         gameId,
         engine,
-        updatedRoom,
-        roomManager,
+        updatedGame,
+        gameManager,
         connectionManager,
       );
     } catch (err) {

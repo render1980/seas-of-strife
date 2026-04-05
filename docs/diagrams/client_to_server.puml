@@ -4,7 +4,7 @@ title Seas of Strife — Client ↔ Server Communication
 actor Client
 participant Server
 participant SessionStore
-participant RoomManager
+participant GameManager
 database PostgreSQL as DB
 
 == Authentication ==
@@ -27,18 +27,18 @@ Server --> Client : WS open
 == Lobby ==
 
 Client -> Server : {type: "create_game"}
-Server -> RoomManager : createRoom(playerId, login, ws)
+Server -> GameManager : createGame(playerId, login, ws)
 Server --> Client : {type: "game_created", gameId}
 Server --> Client : {type: "lobby_update", players, creatorId}
 
 Client -> Server : {type: "join_game", gameId}
-Server -> RoomManager : joinRoom(gameId, playerId, login, ws)
+Server -> GameManager : joinGame(gameId, playerId, login, ws)
 Server --> Client : {type: "lobby_update", players, creatorId}
 
 == Game Start ==
 
 Client -> Server : {type: "start_game"}
-Server -> RoomManager : startGame(playerId)
+Server -> GameManager : startGame(playerId)
 note right: fills bots, creates engine, deals cards
 Server --> Client : {type: "game_state", state} (per player)
 
