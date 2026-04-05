@@ -93,13 +93,16 @@ export async function routeMessage(
         const game = gameManager.getGame(gameId);
         if (!game) return;
 
+        const state = engine.getGameState();
+
         const result = await engine.playCard(playerId, msg.card);
         if (!result.success) {
-          send(ws, { type: "error", message: result.error ?? "Invalid move" });
+          send(ws, {
+            type: "error",
+            message: result.error ?? "Invalid move",
+          });
           return;
         }
-
-        const state = engine.getGameState();
 
         if (result.gameEnded) {
           const winners = engine.getRoundWinners();
@@ -188,7 +191,11 @@ export async function routeMessage(
 
         const result = await engine.selectNextLeader(playerId, msg.playerIndex);
         if (!result.success) {
-          send(ws, { type: "error", message: result.error ?? "Invalid" });
+          const state = engine.getGameState();
+          send(ws, {
+            type: "game_state",
+            state: sanitizeStateForPlayer(state, playerId),
+          });
           return;
         }
 

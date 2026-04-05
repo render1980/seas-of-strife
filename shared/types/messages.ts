@@ -51,6 +51,7 @@ export type ClientMessage =
 export interface ErrorMsg {
   type: "error";
   message: string;
+  state?: SanitizedGameState;
 }
 
 export interface GameCreatedMsg {

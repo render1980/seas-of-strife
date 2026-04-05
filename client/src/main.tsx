@@ -12,6 +12,7 @@ import GameScreen from "./components/GameScreen";
 import LoginForm from "./components/LoginForm";
 import MainScreen from "./components/MainScreen";
 import NewGameLobby from "./components/NewGameLobby";
+import "./index.css";
 
 type Screen = "main" | "new-game-lobby" | "game";
 
@@ -35,12 +36,14 @@ createRoot(root).render(
 export default function App() {
   const [session, setSession] = useState<Session | null>(getSession);
   const [screen, setScreen] = useState<Screen>("main");
+
   const [lobbyState, setLobbyState] = useState<LobbyState | null>(null);
   const [gameState, setGameState] = useState<SanitizedGameState | null>(null);
   const [winners, setWinners] = useState<RoundWinner[] | null>(null);
   const [lastRoundScores, setLastRoundScores] = useState<RoundScores | null>(
     null,
   );
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
 
   const closeWs = useCallback(() => {
@@ -93,6 +96,10 @@ export default function App() {
           break;
         case "error":
           console.error("Server error:", msg.message);
+          setErrorMessage(msg.message);
+          if (msg.state) {
+            setGameState(msg.state);
+          }
           break;
       }
     },
@@ -195,10 +202,12 @@ export default function App() {
         myLogin={session.login}
         winners={winners}
         lastRoundScores={lastRoundScores}
+        error={errorMessage}
         onPlayCard={handlePlayCard}
         onSelectLeader={handleSelectLeader}
         onLeave={handleLeaveGame}
         onDismissRoundEnd={() => setLastRoundScores(null)}
+        onDismissError={() => setErrorMessage(null)}
       />
     );
   }

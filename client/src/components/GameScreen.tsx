@@ -1,13 +1,14 @@
-import type {
-  SanitizedGameState,
-  RoundWinner,
-} from "../../../shared/types/messages";
+import type { Color, PlayedCard } from "../../../server/src/types/types";
 import {
   SUIT_DEFINITIONS,
   SUIT_MAX,
   getSuitFromCard,
 } from "../../../shared/types/cards";
-import type { Color } from "../../../server/src/types/types";
+import type {
+  RoundWinner,
+  SanitizedGameState,
+  SanitizedPlayer,
+} from "../../../shared/types/messages";
 
 // ---------------------------------------------------------------------------
 // Suit helpers
@@ -88,10 +89,12 @@ export interface GameScreenProps {
   myLogin: string;
   winners: RoundWinner[] | null;
   lastRoundScores: { playerId: string; tricksTaken: number }[] | null;
+  error?: string | null;
   onPlayCard: (card: number) => void;
   onSelectLeader: (playerIndex: number) => void;
   onLeave: () => void;
   onDismissRoundEnd: () => void;
+  onDismissError: () => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -103,10 +106,12 @@ export default function GameScreen({
   myLogin,
   winners,
   lastRoundScores,
+  error,
   onPlayCard,
   onSelectLeader,
   onLeave,
   onDismissRoundEnd,
+  onDismissError,
 }: GameScreenProps) {
   const myIndex = state.players.findIndex((p) => p.id === myLogin);
   const me = myIndex >= 0 ? state.players[myIndex] : null;
@@ -125,43 +130,7 @@ export default function GameScreen({
 
   // --- Game-end screen ---
   if (state.phase === "game-end" && winners) {
-    const ranked = [...winners].sort(
-      (a, b) => b.totalTricksTaken - a.totalTricksTaken,
-    );
-    const medals = ["🥇", "🥈", "🥉"];
-    return (
-      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center px-4">
-        <h1 className="sos-title mb-8">Game Over</h1>
-        <div className="bg-slate-800 rounded-2xl p-6 w-full max-w-sm shadow-xl border border-slate-700">
-          <p className="text-slate-400 text-xs uppercase tracking-widest text-center mb-4">
-            Final Rankings
-          </p>
-          <ol className="space-y-2">
-            {ranked.map((w, i) => (
-              <li
-                key={w.playerId}
-                className="flex items-center gap-3 bg-slate-700 rounded-lg px-4 py-3"
-              >
-                <span className="text-xl w-7 text-center shrink-0">
-                  {medals[i] ?? `#${i + 1}`}
-                </span>
-                <span
-                  className={`font-semibold ${w.playerId === myLogin ? "text-yellow-300" : "text-white"}`}
-                >
-                  {w.name}
-                </span>
-                <span className="ml-auto text-slate-400 text-sm">
-                  {w.totalTricksTaken} tricks
-                </span>
-              </li>
-            ))}
-          </ol>
-        </div>
-        <button onClick={onLeave} className="mt-8 menu-item">
-          Back to Menu
-        </button>
-      </div>
-    );
+    return gameEndScreen(winners, myLogin, onLeave);
   }
 
   return (
@@ -194,105 +163,37 @@ export default function GameScreen({
       </header>
 
       {/* Other players */}
-      <div className="flex justify-center gap-3 flex-wrap px-4 py-3 shrink-0">
-        {others.map((player) => {
-          const pIdx = state.players.findIndex((p) => p.id === player.id);
-          const isCurrent =
-            state.currentPlayerIndex === pIdx &&
-            state.phase === "trick-playing";
-          const pc = playedCard(player.id);
-          return (
-            <div
-              key={player.id}
-              onClick={() => {
-                if (iSelectLeader) onSelectLeader(pIdx);
-              }}
-              className={[
-                "flex flex-col items-center gap-2 bg-slate-800 rounded-xl px-3 py-2 min-w-[80px]",
-                isCurrent ? "ring-2 ring-red-500" : "ring-1 ring-slate-700",
-                iSelectLeader
-                  ? "cursor-pointer hover:ring-2 hover:ring-white transition-all"
-                  : "",
-              ]
-                .filter(Boolean)
-                .join(" ")}
-            >
-              <span className="text-white text-xs font-semibold text-center leading-tight">
-                {player.name}
-                {player.isBot && (
-                  <span className="ml-1 text-slate-500 text-[10px]">[bot]</span>
-                )}
-              </span>
-              <div className="flex gap-2 text-[10px] text-slate-400">
-                <span title="Cards">🂠 {player.handSize}</span>
-                <span title="Tricks">⚑ {player.tricksTakenPerRound}</span>
-              </div>
-              {pc ? (
-                <CardTile value={pc.card} small />
-              ) : (
-                <div className="w-9 h-14 rounded border border-dashed border-slate-700" />
-              )}
-              {iSelectLeader && (
-                <span className="text-[10px] text-blue-300 font-semibold animate-pulse">
-                  Select
-                </span>
-              )}
-            </div>
-          );
-        })}
-      </div>
+      {otherPlayerHands(
+        others,
+        state,
+        playedCard,
+        iSelectLeader,
+        onSelectLeader,
+      )}
 
       {/* Trick area */}
-      <div className="flex-1 flex flex-col items-center justify-center gap-3 px-4 py-2 min-h-[140px]">
-        {(state.currentTrick?.playedCards.length ?? 0) > 0 ? (
-          <div className="flex gap-4 flex-wrap justify-center">
-            {state.currentTrick.playedCards.map((pc) => {
-              const pName =
-                state.players.find((p) => p.id === pc.playerId)?.name ?? "?";
-              return (
-                <div
-                  key={pc.playerId}
-                  className="flex flex-col items-center gap-1"
-                >
-                  <CardTile value={pc.card} />
-                  <span className="text-slate-400 text-xs">{pName}</span>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <p className="text-slate-600 text-sm italic">
-            {isMyTurn ? "Play a card to start the trick" : "Waiting…"}
-          </p>
-        )}
-      </div>
+      {trickCards(state, isMyTurn)}
 
-      {/* My hand */}
-      <div className="shrink-0 bg-slate-800/90 border-t border-slate-700 px-4 py-4">
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-slate-400 text-xs uppercase tracking-wider">
-            {me?.name ?? "You"}
-          </span>
-          {isMyTurn && (
-            <span className="text-green-400 text-xs font-semibold animate-pulse">
-              ▶ Your turn
-            </span>
-          )}
+      {myHand(me, isMyTurn, onPlayCard)}
+
+      {error && (
+        <div className="absolute inset-0 flex items-center justify-center px-4 z-50">
+          <div className="bg-red-700 rounded-lg p-6 w-full max-w-sm text-center">
+            <h2 className="text-white font-bold text-xl mb-2">Invalid Move</h2>
+            <p className="text-red-300 text-sm mb-4">{error}</p>
+            <button
+              // onClick - close dialog by clearing error message in state
+              // how to close dialog?
+              onClick={onDismissError}
+              className="w-full rounded-lg bg-red-600 hover:bg-red-500 active:bg-red-700
+                         text-white font-bold py-3 text-sm tracking-widest uppercase transition"
+              style={{ fontFamily: "'Black Ops One', cursive" }}
+            >
+              Continue
+            </button>
+          </div>
         </div>
-        <div className="flex gap-2 flex-wrap justify-center">
-          {me?.hand.map((card) => (
-            <CardTile
-              key={card}
-              value={card}
-              active={isMyTurn}
-              onClick={isMyTurn ? () => onPlayCard(card) : undefined}
-            />
-          ))}
-          {(!me || me.hand.length === 0) && (
-            <p className="text-slate-600 text-sm italic">No cards</p>
-          )}
-        </div>
-      </div>
+      )}
 
       {/* Leader-selection overlay */}
       {iSelectLeader && (
@@ -378,6 +279,169 @@ export default function GameScreen({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function trickCards(state: SanitizedGameState, isMyTurn: boolean) {
+  return (
+    <div className="flex-1 flex flex-col items-center justify-center gap-3 px-4 py-2 min-h-[140px]">
+      {(state.currentTrick?.playedCards.length ?? 0) > 0 ? (
+        <div className="flex gap-4 flex-wrap justify-center">
+          {state.currentTrick.playedCards.map((pc) => {
+            const pName =
+              state.players.find((p) => p.id === pc.playerId)?.name ?? "?";
+            return (
+              <div
+                key={pc.playerId}
+                className="flex flex-col items-center gap-1"
+              >
+                <CardTile value={pc.card} />
+                <span className="text-slate-400 text-xs">{pName}</span>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <p className="text-slate-600 text-sm italic">
+          {isMyTurn ? "Play a card to start the trick" : "Waiting…"}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function otherPlayerHands(
+  others: SanitizedPlayer[],
+  state: SanitizedGameState,
+  playedCard: (playerId: string) => PlayedCard | undefined,
+  iSelectLeader: boolean,
+  onSelectLeader: (playerIndex: number) => void,
+) {
+  return (
+    <div className="flex justify-center gap-3 flex-wrap px-4 py-3 shrink-0">
+      {others.map((player) => {
+        const pIdx = state.players.findIndex((p) => p.id === player.id);
+        const isCurrent =
+          state.currentPlayerIndex === pIdx && state.phase === "trick-playing";
+        const pc = playedCard(player.id);
+        return (
+          <div
+            key={player.id}
+            onClick={() => {
+              if (iSelectLeader) onSelectLeader(pIdx);
+            }}
+            className={[
+              "flex flex-col items-center gap-2 bg-slate-800 rounded-xl px-3 py-2 min-w-[80px]",
+              isCurrent ? "ring-2 ring-red-500" : "ring-1 ring-slate-700",
+              iSelectLeader
+                ? "cursor-pointer hover:ring-2 hover:ring-white transition-all"
+                : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
+          >
+            <span className="text-white text-xs font-semibold text-center leading-tight">
+              {player.name}
+              {player.isBot && (
+                <span className="ml-1 text-slate-500 text-[10px]">[bot]</span>
+              )}
+            </span>
+            <div className="flex gap-2 text-[10px] text-slate-400">
+              <span title="Cards">🂠 {player.handSize}</span>
+              <span title="Tricks">⚑ {player.tricksTakenPerRound}</span>
+            </div>
+            {pc ? (
+              <CardTile value={pc.card} small />
+            ) : (
+              <div className="w-9 h-14 rounded border border-dashed border-slate-700" />
+            )}
+            {iSelectLeader && (
+              <span className="text-[10px] text-blue-300 font-semibold animate-pulse">
+                Select
+              </span>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function myHand(
+  me: SanitizedPlayer | null,
+  isMyTurn: boolean,
+  onPlayCard: (card: number) => void,
+) {
+  return (
+    <div className="shrink-0 bg-slate-800/90 border-t border-slate-700 px-4 py-4">
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-slate-400 text-xs uppercase tracking-wider">
+          {me?.name ?? "You"}
+        </span>
+        {isMyTurn && (
+          <span className="text-green-400 text-xs font-semibold animate-pulse">
+            ▶ Your turn
+          </span>
+        )}
+      </div>
+      <div className="flex gap-2 flex-wrap justify-center">
+        {me?.hand.map((card) => (
+          <CardTile
+            key={card}
+            value={card}
+            active={isMyTurn}
+            onClick={isMyTurn ? () => onPlayCard(card) : undefined}
+          />
+        ))}
+        {(!me || me.hand.length === 0) && (
+          <p className="text-slate-600 text-sm italic">No cards</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function gameEndScreen(
+  winners: RoundWinner[],
+  myLogin: string,
+  onLeave: () => void,
+) {
+  const ranked = [...winners].sort(
+    (a, b) => b.totalTricksTaken - a.totalTricksTaken,
+  );
+  const medals = ["🥇", "🥈", "🥉"];
+  return (
+    <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center px-4">
+      <h1 className="sos-title mb-8">Game Over</h1>
+      <div className="bg-slate-800 rounded-2xl p-6 w-full max-w-sm shadow-xl border border-slate-700">
+        <p className="text-slate-400 text-xs uppercase tracking-widest text-center mb-4">
+          Final Rankings
+        </p>
+        <ol className="space-y-2">
+          {ranked.map((w, i) => (
+            <li
+              key={w.playerId}
+              className="flex items-center gap-3 bg-slate-700 rounded-lg px-4 py-3"
+            >
+              <span className="text-xl w-7 text-center shrink-0">
+                {medals[i] ?? `#${i + 1}`}
+              </span>
+              <span
+                className={`font-semibold ${w.playerId === myLogin ? "text-yellow-300" : "text-white"}`}
+              >
+                {w.name}
+              </span>
+              <span className="ml-auto text-slate-400 text-sm">
+                {w.totalTricksTaken} tricks
+              </span>
+            </li>
+          ))}
+        </ol>
+      </div>
+      <button onClick={onLeave} className="mt-8 menu-item">
+        Back to Menu
+      </button>
     </div>
   );
 }
