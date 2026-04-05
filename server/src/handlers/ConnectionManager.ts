@@ -141,7 +141,7 @@ export class ConnectionManager {
   }
 
   /**
-   * Handle 30-second disconnect timeout.
+   * Handle disconnect timeout.
    * Auto-play a random valid card.
    */
   private async handleDisconnectTimeout(
