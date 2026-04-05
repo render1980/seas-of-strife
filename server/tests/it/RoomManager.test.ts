@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it } from "bun:test";
 import type { ServerWebSocket } from "bun";
-import { GameManager } from "../../src/ws/lobby/GameManager";
+import { GameManager } from "../../src/handlers/lobby/GameManager";
 import { GameRegistry } from "../../src/game/GameRegistry";
 import { GameRepository } from "../../src/db/repositories/GameRepository";
-import { ConnectionManager } from "../../src/ws/ConnectionManager";
-import { SessionStore } from "../../src/ws/auth/SessionStore";
-import type { WsData } from "../../src/ws/ws/handler";
+import { ConnectionManager } from "../../src/handlers/ConnectionManager";
+import { SessionStore } from "../../src/handlers/auth/SessionStore";
+import type { WsData } from "../../src/handlers/ws/handler";
 import { getDb, truncateAllTables } from "./helpers/db";
 
 // ---------------------------------------------------------------------------
