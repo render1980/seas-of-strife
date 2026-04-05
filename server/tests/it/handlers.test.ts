@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "bun:test";
-import { AuthHandler } from "../../src/ws/auth/handlers";
+import { AuthHandler } from "../../src/ws/auth/AuthHandler";
 import { GameRepository } from "../../src/db/repositories/GameRepository";
-import { SessionStore } from "../../src/ws/auth/sessions";
+import { SessionStore } from "../../src/ws/auth/SessionStore";
 import { getDb, truncateAllTables } from "./helpers/db";
 
 const sql = getDb();

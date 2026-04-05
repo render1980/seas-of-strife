@@ -4,7 +4,7 @@ import { GameManager } from "../../src/ws/lobby/GameManager";
 import { GameRegistry } from "../../src/game/GameRegistry";
 import { GameRepository } from "../../src/db/repositories/GameRepository";
 import { ConnectionManager } from "../../src/ws/ConnectionManager";
-import { SessionStore } from "../../src/ws/auth/sessions";
+import { SessionStore } from "../../src/ws/auth/SessionStore";
 import type { WsData } from "../../src/ws/ws/handler";
 import { getDb, truncateAllTables } from "./helpers/db";
 

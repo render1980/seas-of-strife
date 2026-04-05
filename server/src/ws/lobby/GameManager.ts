@@ -6,7 +6,7 @@ import type {
 import type { GameRegistry } from "../../game/GameRegistry";
 import type { GameState, PlayerState } from "../../types/types";
 import type { ConnectionManager } from "../ConnectionManager";
-import type { SessionStore } from "../auth/sessions";
+import type { SessionStore } from "../auth/SessionStore";
 import { sanitizeStateForPlayer } from "../sanitize";
 import type { WsData } from "../ws/handler";
 

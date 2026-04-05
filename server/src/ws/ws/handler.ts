@@ -2,7 +2,7 @@ import type { ServerWebSocket } from "bun";
 import type { GameManager } from "../lobby/GameManager";
 import type { GameRegistry } from "../../game/GameRegistry";
 import type { ConnectionManager } from "../ConnectionManager";
-import type { SessionStore } from "../auth/sessions";
+import type { SessionStore } from "../auth/SessionStore";
 import { sanitizeStateForPlayer } from "../sanitize";
 import { routeMessage } from "./router";
 

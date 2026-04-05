@@ -1,5 +1,5 @@
 import type { GameRepository } from "../../db/repositories/GameRepository";
-import type { SessionStore } from "./sessions";
+import type { SessionStore } from "./SessionStore";
 
 export class AuthHandler {
   private gameRepository: GameRepository;
