@@ -1,8 +1,8 @@
 import {
-  Color,
-  getSuitFromCard,
-  SUIT_DEFINITIONS,
-  SUIT_MAX,
+    Color,
+    getSuitFromCard,
+    SUIT_DEFINITIONS,
+    SUIT_MAX,
 } from "../../../../shared/types/cards";
 
 type SuitColor = Color;
@@ -54,7 +54,7 @@ export function CardTile({
           <div
             key={i}
             className={`h-0.5 rounded-full transition-all ${
-              i < rank ? "bg-white" : "bg-white/20"
+              i !== rank ? "bg-white/20" : "bg-white"
             }`}
             style={{ width: `${((i + 1) / suitSize) * 100}%` }}
           />
