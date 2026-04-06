@@ -40,6 +40,10 @@ export async function routeMessage(
         break;
       }
 
+      case "continue_game": {
+        break;
+      }
+
       case "join_game": {
         gameManager.joinGame(msg.gameId, playerId, login, ws);
         break;

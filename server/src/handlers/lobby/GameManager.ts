@@ -200,6 +200,12 @@ export class GameManager {
     return this.playerToGame.get(playerId);
   }
 
+  getPlayerGame(playerId: string): Game | undefined {
+    const gameId = this.playerToGame.get(playerId);
+    if (gameId === undefined) return undefined;
+    return this.games.get(gameId);
+  }
+
   getGame(gameId: number): Game | undefined {
     return this.games.get(gameId);
   }

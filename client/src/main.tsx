@@ -117,6 +117,17 @@ export default function App() {
     });
   }
 
+  function handleContinueGame() {
+    if (!session) return;
+    closeWs();
+    setScreen("game");
+    const ws = connectWebSocket(session.token, handleMessage, goToMain);
+    wsRef.current = ws;
+    ws.addEventListener("open", () => {
+      sendWsMessage(ws, { type: "continue_game" });
+    });
+  }
+
   function handleJoinGame(gameId: number) {
     if (!session) return;
     closeWs();
@@ -217,6 +228,7 @@ export default function App() {
       session={session}
       state={gameState}
       onNewGame={handleNewGame}
+      onContinueGame={handleContinueGame}
       onJoinGame={handleJoinGame}
       onLogout={handleLogout}
     />

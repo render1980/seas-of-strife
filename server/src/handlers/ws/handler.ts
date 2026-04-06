@@ -30,18 +30,16 @@ export function createWsHandlers(deps: WsDeps) {
     open(ws: ServerWebSocket<WsData>) {
       const { playerId, login } = ws.data;
       console.log(`[WS] Connected: ${login}`);
-
       // Check if player was in a game (reconnection)
-      const gameId = deps.gameManager.getPlayerGameId(playerId);
-      if (gameId !== undefined) {
+      const game = deps.gameManager.getPlayerGame(playerId);
+      if (game) {
         deps.gameManager.updatePlayerSocket(playerId, ws);
 
-        const game = deps.gameManager.getGame(gameId);
-        if (game?.started) {
-          deps.connectionManager.playerConnected(gameId, playerId);
+        if (game.started) {
+          deps.connectionManager.playerConnected(game.gameId, playerId);
 
           // Send current game state
-          const engine = deps.gameRegistry.getGame(gameId);
+          const engine = deps.gameRegistry.getGame(game.gameId);
           if (engine) {
             const state = sanitizeStateForPlayer(
               engine.getGameState(),
@@ -67,11 +65,10 @@ export function createWsHandlers(deps: WsDeps) {
       const { playerId, login } = ws.data;
       console.log(`[WS] Disconnected: ${login}`);
 
-      const gameId = deps.gameManager.getPlayerGameId(playerId);
-      if (gameId !== undefined) {
-        const game = deps.gameManager.getGame(gameId);
-        if (game?.started) {
-          deps.connectionManager.playerDisconnected(gameId, playerId);
+      const game = deps.gameManager.getPlayerGame(playerId);
+      if (game) {
+        if (game.started) {
+          deps.connectionManager.playerDisconnected(game.gameId, playerId);
           deps.gameManager.broadcast(game, {
             type: "player_disconnected",
             playerId,

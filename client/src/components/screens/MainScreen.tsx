@@ -6,6 +6,7 @@ interface Props {
   session: Session;
   state: SanitizedGameState | null;
   onNewGame: () => void;
+  onContinueGame: () => void;
   onJoinGame: (gameId: number) => void;
   onLogout: () => void;
 }
@@ -14,6 +15,7 @@ export default function MainScreen({
   session: _session,
   state,
   onNewGame,
+  onContinueGame,
   onJoinGame,
   onLogout,
 }: Props) {
@@ -42,7 +44,7 @@ export default function MainScreen({
 
       <nav className="mt-16 flex flex-col items-center gap-2">
         {state && state.phase !== "game-end" && (
-          <button onClick={onNewGame} className="menu-item">
+          <button onClick={onContinueGame} className="menu-item">
             Continue
           </button>
         )}

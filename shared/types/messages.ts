@@ -8,6 +8,10 @@ export interface CreateGameMsg {
   type: "create_game";
 }
 
+export interface ContinueGameMsg {
+  type: "continue_game";
+}
+
 export interface JoinGameMsg {
   type: "join_game";
   gameId: number;
@@ -37,6 +41,7 @@ export interface SelectLeaderMsg {
 
 export type ClientMessage =
   | CreateGameMsg
+  | ContinueGameMsg
   | JoinGameMsg
   | LeaveGameMsg
   | StopGameMsg
