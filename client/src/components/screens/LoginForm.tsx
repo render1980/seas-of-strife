@@ -1,5 +1,5 @@
 import { useState, FormEvent } from "react";
-import { login, saveSession, Session } from "../api/auth";
+import { login, saveSession, Session } from "../../api/auth";
 
 interface Props {
   onLogin: (session: Session) => void;

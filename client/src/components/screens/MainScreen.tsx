@@ -1,6 +1,6 @@
 import { useState, FormEvent } from "react";
-import { Session } from "../api/auth";
-import { SanitizedGameState } from "../../../shared/types/messages";
+import { Session } from "../../api/auth";
+import { SanitizedGameState } from "../../../../shared/types/messages";
 
 interface Props {
   session: Session;

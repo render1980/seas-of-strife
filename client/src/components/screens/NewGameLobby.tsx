@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { LobbyPlayer } from "../../../shared/types/messages";
+import type { LobbyPlayer } from "../../../../shared/types/messages";
 
 interface Props {
   gameId: number;

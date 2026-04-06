@@ -8,10 +8,10 @@ import type {
 } from "../../shared/types/messages";
 import { Session, clearSession, getSession, logout } from "./api/auth";
 import { connectWebSocket, sendWsMessage } from "./api/ws";
-import GameScreen from "./components/GameScreen";
-import LoginForm from "./components/LoginForm";
-import MainScreen from "./components/MainScreen";
-import NewGameLobby from "./components/NewGameLobby";
+import GameScreen from "./components/screens/GameScreen";
+import LoginForm from "./components/screens/LoginForm";
+import MainScreen from "./components/screens/MainScreen";
+import NewGameLobby from "./components/screens/NewGameLobby";
 import "./index.css";
 
 type Screen = "main" | "new-game-lobby" | "game";
