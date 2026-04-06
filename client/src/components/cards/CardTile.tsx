@@ -1,8 +1,8 @@
 import {
-    Color,
-    getSuitFromCard,
-    SUIT_DEFINITIONS,
-    SUIT_MAX,
+  Color,
+  getSuitFromCard,
+  SUIT_DEFINITIONS,
+  SUIT_MAX,
 } from "../../../../shared/types/cards";
 
 type SuitColor = Color;
@@ -30,6 +30,7 @@ export function CardTile({
   small?: boolean;
 }) {
   const { color, rank, suitSize, number, isSpecial } = cardInfo(value);
+
   return (
     <button
       onClick={onClick}
@@ -37,8 +38,8 @@ export function CardTile({
       title={`Card #${number} · Rank ${rank}/${suitSize}${isSpecial ? " · ★" : ""}`}
       className={[
         CARD_BG[color],
-        small ? "w-16 h-28 text-sm" : "w-24 h-36 text-lg",
-        "rounded-lg flex flex-col items-center justify-center gap-0.5 shrink-0",
+        small ? "w-16 h-28 text-xs" : "w-20 h-32 text-base",
+        "rounded-lg flex flex-col items-center justify-between shrink-0", // KEY: justify-between
         "text-white font-bold shadow border-2 select-none transition-all",
         isSpecial ? "border-yellow-400" : "border-white/20",
         active ? "ring-2 ring-white" : "",
@@ -49,21 +50,26 @@ export function CardTile({
         .filter(Boolean)
         .join(" ")}
     >
-      <div className="flex flex-col gap-1 w-full px-1">
+      {/* Bars at top */}
+      <div className="flex flex-col gap-1 w-full px-1 pt-2">
         {Array.from({ length: suitSize }).map((_, i) => (
           <div
             key={i}
-            className={`h-0.5 rounded-full transition-all ${
-              i !== rank ? "bg-white/20" : "bg-white"
+            className={`h-1 rounded-full transition-all ${
+              i !== rank ? "bg-white/30" : "bg-white"
             }`}
             style={{ width: `${((i + 1) / suitSize) * 100}%` }}
           />
         ))}
       </div>
-      <span className="text-[18px] leading-none opacity-70">{number}</span>
-      {isSpecial && (
-        <span className="text-yellow-300 text-[18px] leading-none">★</span>
-      )}
+
+      {/* Card number at bottom */}
+      <div className="flex flex-col items-center gap-1">
+        {isSpecial && (
+          <span className="text-yellow-300 text-[19px] leading-none">★</span>
+        )}
+        <span className="text-[19px] leading-none opacity-70">{number}</span>
+      </div>
     </button>
   );
 }
