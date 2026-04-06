@@ -1,9 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import {
-  ALL_CARDS,
-  getSuitFromCard,
-  isHighestCardOfSuit,
-} from "../../src/game/cards";
+import { ALL_CARDS, isHighestCardOfSuit } from "../../src/game/cards";
+import { getSuitFromCard } from "../../../shared/types/cards";
 
 describe("Card definitions", () => {
   it("has no duplicate card values", () => {

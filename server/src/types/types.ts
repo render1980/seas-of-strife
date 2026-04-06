@@ -1,12 +1,4 @@
-export type Color =
-  | "orange"
-  | "red"
-  | "gray"
-  | "blue"
-  | "green"
-  | "purple"
-  | "teal"
-  | "dark_red";
+import type { Color } from "../../../shared/types/cards";
 
 export type GamePhase =
   | "waiting"
@@ -16,29 +8,10 @@ export type GamePhase =
   | "round-end"
   | "game-end";
 
-export interface Suit {
-  color: Color;
-  min: number;
-  max: number;
-  /** Thematic background name **/
-  theme: string;
-}
-
 export const DECK_LENGTH = 60;
 export const TOTAL_ROUNDS_PER_GAME = 5;
 export const MIN_PLAYERS = 4;
 export const MAX_PLAYERS = 6;
-
-export const SUIT_DEFINITIONS: Suit[] = [
-  { color: "orange", min: 0, max: 10, theme: "doldrums" },
-  { color: "red", min: 11, max: 20, theme: "reef" },
-  { color: "gray", min: 21, max: 29, theme: "fog" },
-  { color: "blue", min: 31, max: 38, theme: "iceberg" },
-  { color: "green", min: 41, max: 47, theme: "rocks" },
-  { color: "purple", min: 51, max: 56, theme: "storm" },
-  { color: "teal", min: 61, max: 65, theme: "whirlpool" },
-  { color: "dark_red", min: 71, max: 74, theme: "kraken" },
-];
 
 export interface Card {
   value: number;

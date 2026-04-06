@@ -1,5 +1,6 @@
-import type { Color, PlayedCard } from "../../../server/src/types/types";
+import type { PlayedCard } from "../../../server/src/types/types";
 import {
+  Color,
   SUIT_DEFINITIONS,
   SUIT_MAX,
   getSuitFromCard,
@@ -33,6 +34,8 @@ function cardInfo(v: number) {
   return {
     color,
     rank: v - suit.min,
+    suitSize: suit.max - suit.min + 1,
+    number: v,
     isSpecial: v === SUIT_MAX[color],
   };
 }
@@ -52,12 +55,12 @@ function CardTile({
   active?: boolean;
   small?: boolean;
 }) {
-  const { color, rank, isSpecial } = cardInfo(value);
+  const { color, rank, suitSize, number, isSpecial } = cardInfo(value);
   return (
     <button
       onClick={onClick}
       disabled={!onClick}
-      title={`${color} · ${rank}${isSpecial ? " · ★" : ""}`}
+      title={`Card #${number} · Rank ${rank}/${suitSize}${isSpecial ? " · ★" : ""}`}
       className={[
         CARD_BG[color],
         small ? "w-9 h-14 text-xs" : "w-12 h-20 text-sm",
@@ -72,7 +75,18 @@ function CardTile({
         .filter(Boolean)
         .join(" ")}
     >
-      <span>{rank}</span>
+      <div className="flex flex-col gap-1 w-full px-1">
+        {Array.from({ length: suitSize }).map((_, i) => (
+          <div
+            key={i}
+            className={`h-0.5 rounded-full transition-all ${
+              i < rank ? "bg-white" : "bg-white/20"
+            }`}
+            style={{ width: `${((i + 1) / suitSize) * 100}%` }}
+          />
+        ))}
+      </div>
+      <span className="text-[9px] leading-none opacity-70">{number}</span>
       {isSpecial && (
         <span className="text-yellow-300 text-[9px] leading-none">★</span>
       )}

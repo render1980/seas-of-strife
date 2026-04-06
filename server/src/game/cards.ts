@@ -1,4 +1,10 @@
-import { type Color, SUIT_DEFINITIONS, DECK_LENGTH } from "../types/types";
+import {
+  getSuitFromCard,
+  SUIT_DEFINITIONS,
+  SUIT_MAX,
+  type Color,
+} from "../../../shared/types/cards";
+import { DECK_LENGTH } from "../types/types";
 
 /**
  * Functions which are specific to the card deck and suits, but not game logic.
@@ -18,23 +24,6 @@ export const SUIT_CARD_COUNT: Record<Color, number> = SUIT_DEFINITIONS.reduce(
   (acc, { color: suit, min, max }) => ({ ...acc, [suit]: max - min + 1 }),
   {} as Record<Color, number>,
 );
-
-/** Highest card value per suit */
-export const SUIT_MAX: Record<Color, number> = SUIT_DEFINITIONS.reduce(
-  (acc, { color: suit, max }) => ({ ...acc, [suit]: max }),
-  {} as Record<Color, number>,
-);
-
-/**
- * Returns the suit for a given card value.
- * Throws if the value is not a valid card.
- */
-export function getSuitFromCard(value: number): Color {
-  for (const { color: suit, min, max } of SUIT_DEFINITIONS) {
-    if (value >= min && value <= max) return suit;
-  }
-  throw new Error(`Invalid card value: ${value}`);
-}
 
 /**
  * Returns the 0-based position of the card within its suit.

@@ -1,3 +1,4 @@
+import { getSuitFromCard } from "../../../shared/types/cards";
 import type {
   GameState,
   PlayedCard,
@@ -6,7 +7,7 @@ import type {
   TrickState,
   ValidationResult,
 } from "../types/types";
-import { getSuitFromCard, isHighestCardOfSuit } from "./cards";
+import { isHighestCardOfSuit } from "./cards";
 
 /**
  * This file contains logic for resolving trick winners and validating card plays.
