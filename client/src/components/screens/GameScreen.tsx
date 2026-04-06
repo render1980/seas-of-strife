@@ -280,7 +280,7 @@ function otherPlayerHands(
             {pc ? (
               <CardTile value={pc.card} small />
             ) : (
-              <div className="w-9 h-14 rounded border border-dashed border-slate-700" />
+              <div className="w-16 h-28 rounded border border-dashed border-slate-700" />
             )}
             {iSelectLeader && (
               <span className="text-[10px] text-blue-300 font-semibold animate-pulse">

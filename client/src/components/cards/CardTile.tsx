@@ -37,7 +37,7 @@ export function CardTile({
       title={`Card #${number} · Rank ${rank}/${suitSize}${isSpecial ? " · ★" : ""}`}
       className={[
         CARD_BG[color],
-        small ? "w-9 h-14 text-xs" : "w-12 h-20 text-sm",
+        small ? "w-16 h-28 text-sm" : "w-24 h-36 text-lg",
         "rounded-lg flex flex-col items-center justify-center gap-0.5 shrink-0",
         "text-white font-bold shadow border-2 select-none transition-all",
         isSpecial ? "border-yellow-400" : "border-white/20",
@@ -60,9 +60,9 @@ export function CardTile({
           />
         ))}
       </div>
-      <span className="text-[9px] leading-none opacity-70">{number}</span>
+      <span className="text-[18px] leading-none opacity-70">{number}</span>
       {isSpecial && (
-        <span className="text-yellow-300 text-[9px] leading-none">★</span>
+        <span className="text-yellow-300 text-[18px] leading-none">★</span>
       )}
     </button>
   );
