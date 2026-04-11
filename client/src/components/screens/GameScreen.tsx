@@ -14,7 +14,7 @@ export interface GameScreenProps {
   state: SanitizedGameState;
   myLogin: string;
   winners: RoundWinner[] | null;
-  lastRoundScores: { playerId: string; tricksTaken: number }[] | null;
+  roundScores: { playerId: string; tricksTaken: number }[] | null;
   error?: string | null;
   onPlayCard: (card: number) => void;
   onSelectLeader: (playerIndex: number) => void;
@@ -31,7 +31,7 @@ export default function GameScreen({
   state,
   myLogin,
   winners,
-  lastRoundScores,
+  roundScores,
   error,
   onPlayCard,
   onSelectLeader,
@@ -160,7 +160,7 @@ export default function GameScreen({
       )}
 
       {/* Round-end overlay */}
-      {lastRoundScores && (
+      {roundScores && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 px-4">
           <div className="bg-slate-800 rounded-2xl p-6 w-full max-w-xs shadow-2xl border border-slate-700">
             <h2
@@ -173,7 +173,7 @@ export default function GameScreen({
               Tricks taken
             </p>
             <ul className="space-y-2 mb-6">
-              {[...lastRoundScores]
+              {[...roundScores]
                 .sort((a, b) => b.tricksTaken - a.tricksTaken)
                 .map((s) => {
                   const name =

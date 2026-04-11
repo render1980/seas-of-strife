@@ -9,7 +9,7 @@ export type GamePhase =
   | "game-end";
 
 export const DECK_LENGTH = 60;
-export const TOTAL_ROUNDS_PER_GAME = 5;
+export const TOTAL_ROUNDS_PER_GAME = 1;
 export const MIN_PLAYERS = 4;
 export const MAX_PLAYERS = 6;
 

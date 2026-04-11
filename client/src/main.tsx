@@ -43,7 +43,7 @@ export default function App() {
   const [lobbyState, setLobbyState] = useState<LobbyState | null>(null);
   const [gameState, setGameState] = useState<SanitizedGameState | null>(null);
   const [winners, setWinners] = useState<RoundWinner[] | null>(null);
-  const [lastRoundScores, setLastRoundScores] = useState<RoundScores | null>(
+  const [roundScores, setRoundScores] = useState<RoundScores | null>(
     null,
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -61,7 +61,7 @@ export default function App() {
     setLobbyState(null);
     // setGameState(null);
     setWinners(null);
-    setLastRoundScores(null);
+    setRoundScores(null);
     setScreen("main");
   }, [closeWs]);
 
@@ -86,7 +86,7 @@ export default function App() {
           break;
         case "round_ended":
           setGameState(msg.state);
-          setLastRoundScores(msg.scores);
+          setRoundScores(msg.scores);
           setScreen("game");
           break;
         case "game_ended":
@@ -249,12 +249,12 @@ export default function App() {
         state={gameState}
         myLogin={session.login}
         winners={winners}
-        lastRoundScores={lastRoundScores}
+        roundScores={roundScores}
         error={errorMessage}
         onPlayCard={handlePlayCard}
         onSelectLeader={handleSelectLeader}
         onLeave={handleLeaveGame}
-        onDismissRoundEnd={() => setLastRoundScores(null)}
+        onDismissRoundEnd={() => setRoundScores(null)}
         onDismissError={() => setErrorMessage(null)}
       />
     );
