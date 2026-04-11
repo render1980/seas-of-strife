@@ -49,14 +49,26 @@ User anytime can leave a game and go to the main screen.
 
 ## Profile
 
-Profile should be accessible from the main screen. Profile should contain:
-- Results of previous games (including all real players who played)
-- Name / login of the user
-- Amount of gold medals (times when user won 1st place)
-- Amount of silver medals (times when user won 2nd place)
-- Amount of bronze medals (times when user won 3d place)
+User: Profile should be accessible from the main screen ('Profile' in the menu on the main screen). It should be a screen.
 
-Medals should be displayed in a row.
+On the top of the screen info about medals should be displayed starting from the left to the right:
+- gold medal (icon + total amount)
+- silver (icon + total amount)
+- bronze (icon + total amount)
+Use CSS style to create nice styles for medals.
+
+Next should follow a list (position similar to main screen) with next items:
+- "Personal info"
+- "Results"
+
+"Personal info" should lead to the screen with a editable personal info (login for now).
+
+"Results" should lead to the screen with results for all games (sorting starts from the latest played) and participants. Every game should be represented as a table with two columns
+- Place
+- Login
+Amount of rows should be equal to amount of real participated players. The current logged-in player name should be highlighted.
+
+Every screen should have an icon to go back to the previous screen.
 
 ## Handling reconnections
 

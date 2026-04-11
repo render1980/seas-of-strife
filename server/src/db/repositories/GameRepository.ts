@@ -272,6 +272,99 @@ export class GameRepository {
     }));
   }
 
+  async getPlayerProfile(userId: number): Promise<{
+    goldMedals: number;
+    silverMedals: number;
+    bronzeMedals: number;
+    totalGamesPlayed: number;
+  } | null> {
+    const rows = await this.sql<
+      [{ gold_medals: number; silver_medals: number; bronze_medals: number; total_games_played: number }]
+    >`
+      SELECT gold_medals, silver_medals, bronze_medals, total_games_played
+      FROM player_profiles WHERE user_id = ${userId}
+    `;
+    if (!rows.length) return null;
+    const r = rows[0];
+    return {
+      goldMedals: r.gold_medals,
+      silverMedals: r.silver_medals,
+      bronzeMedals: r.bronze_medals,
+      totalGamesPlayed: r.total_games_played,
+    };
+  }
+
+  async getGameResultsWithParticipants(userId: number): Promise<
+    Array<{
+      gameId: number;
+      createdAt: string;
+      participants: Array<{ login: string; place: number }>;
+    }>
+  > {
+    // Get the last 10 distinct game_ids this user participated in
+    const userGames = await this.sql<
+      Array<{ game_id: number; created_at: string }>
+    >`
+      SELECT game_id, created_at
+      FROM player_game_results
+      WHERE user_id = ${userId}
+      ORDER BY created_at DESC
+      LIMIT 10
+    `;
+
+    if (!userGames.length) return [];
+
+    const gameIds = userGames.map((g) => g.game_id);
+
+    // Get all participants for those games, joined with users for login
+    const participants = await this.sql<
+      Array<{
+        game_id: number;
+        login: string;
+        total_tricks_taken: number;
+      }>
+    >`
+      SELECT pgr.game_id, u.login, pgr.total_tricks_taken
+      FROM player_game_results pgr
+      JOIN users u ON u.id = pgr.user_id
+      WHERE pgr.game_id = ANY(${gameIds})
+      ORDER BY pgr.game_id, pgr.total_tricks_taken ASC
+    `;
+
+    // Group by game
+    const gameMap = new Map<number, Array<{ login: string; totalTricks: number }>>();
+    for (const p of participants) {
+      let arr = gameMap.get(p.game_id);
+      if (!arr) {
+        arr = [];
+        gameMap.set(p.game_id, arr);
+      }
+      arr.push({ login: p.login, totalTricks: p.total_tricks_taken });
+    }
+
+    return userGames.map((g) => {
+      const parts = gameMap.get(g.game_id) ?? [];
+      return {
+        gameId: g.game_id,
+        createdAt: g.created_at,
+        participants: parts.map((p, i) => ({ login: p.login, place: i + 1 })),
+      };
+    });
+  }
+
+  async updateUserLogin(userId: number, newLogin: string): Promise<void> {
+    const existing = await this.sql`
+      SELECT id FROM users WHERE login = ${newLogin} AND id != ${userId}
+    `;
+    if (existing.length > 0) {
+      throw new Error("This login is already taken");
+    }
+    await this.sql`
+      UPDATE users SET login = ${newLogin}, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ${userId}
+    `;
+  }
+
   /**
    * Returns the highest game_id currently in the database (0 if none).
    * Used to seed GameManager's nextGameId on startup.

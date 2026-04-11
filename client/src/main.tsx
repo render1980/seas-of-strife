@@ -12,9 +12,12 @@ import GameScreen from "./components/screens/GameScreen";
 import LoginForm from "./components/screens/LoginForm";
 import MainScreen from "./components/screens/MainScreen";
 import NewGameLobby from "./components/screens/NewGameLobby";
+import PersonalInfoScreen from "./components/screens/PersonalInfoScreen";
+import ProfileScreen from "./components/screens/ProfileScreen";
+import ResultsScreen from "./components/screens/ResultsScreen";
 import "./index.css";
 
-type Screen = "main" | "new-game-lobby" | "game";
+type Screen = "main" | "new-game-lobby" | "game" | "profile" | "personal-info" | "results";
 
 interface LobbyState {
   gameId: number;
@@ -184,6 +187,40 @@ export default function App() {
     return <LoginForm onLogin={setSession} />;
   }
 
+  if (screen === "profile") {
+    return (
+      <ProfileScreen
+        token={session.token}
+        onPersonalInfo={() => setScreen("personal-info")}
+        onResults={() => setScreen("results")}
+        onBack={() => setScreen("main")}
+      />
+    );
+  }
+
+  if (screen === "personal-info") {
+    return (
+      <PersonalInfoScreen
+        token={session.token}
+        currentLogin={session.login}
+        onLoginUpdated={(newLogin) => {
+          setSession({ ...session, login: newLogin });
+        }}
+        onBack={() => setScreen("profile")}
+      />
+    );
+  }
+
+  if (screen === "results") {
+    return (
+      <ResultsScreen
+        token={session.token}
+        currentLogin={session.login}
+        onBack={() => setScreen("profile")}
+      />
+    );
+  }
+
   if (screen === "new-game-lobby") {
     if (!lobbyState) {
       return (
@@ -230,6 +267,7 @@ export default function App() {
       onNewGame={handleNewGame}
       onContinueGame={handleContinueGame}
       onJoinGame={handleJoinGame}
+      onProfile={() => setScreen("profile")}
       onLogout={handleLogout}
     />
   );

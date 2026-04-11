@@ -8,6 +8,7 @@ interface Props {
   onNewGame: () => void;
   onContinueGame: () => void;
   onJoinGame: (gameId: number) => void;
+  onProfile: () => void;
   onLogout: () => void;
 }
 
@@ -17,6 +18,7 @@ export default function MainScreen({
   onNewGame,
   onContinueGame,
   onJoinGame,
+  onProfile,
   onLogout,
 }: Props) {
   const [showJoin, setShowJoin] = useState(false);
@@ -66,7 +68,7 @@ export default function MainScreen({
           </>
         )}
 
-        <button className="menu-item opacity-40 cursor-not-allowed" disabled>
+        <button onClick={onProfile} className="menu-item">
           Profile
         </button>
         <button onClick={onLogout} className="menu-item">

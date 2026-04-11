@@ -64,6 +64,54 @@ const server = Bun.serve<WsData>({
       return authHandler.handleLogout(body, sessionStore);
     }
 
+    // --- Profile routes ---
+
+    if (req.method === "GET" && url.pathname === "/api/profile") {
+      const token = url.searchParams.get("token");
+      if (!token) return Response.json({ error: "Missing token" }, { status: 401 });
+      const session = sessionStore.getSession(token);
+      if (!session) return Response.json({ error: "Invalid token" }, { status: 401 });
+
+      const profile = await gameRepository.getPlayerProfile(session.userId);
+      return Response.json({
+        login: session.login,
+        goldMedals: profile?.goldMedals ?? 0,
+        silverMedals: profile?.silverMedals ?? 0,
+        bronzeMedals: profile?.bronzeMedals ?? 0,
+      });
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/profile/results") {
+      const token = url.searchParams.get("token");
+      if (!token) return Response.json({ error: "Missing token" }, { status: 401 });
+      const session = sessionStore.getSession(token);
+      if (!session) return Response.json({ error: "Invalid token" }, { status: 401 });
+
+      const games = await gameRepository.getGameResultsWithParticipants(session.userId);
+      return Response.json({ games });
+    }
+
+    if (req.method === "PUT" && url.pathname === "/api/profile") {
+      const body = (await req.json()) as { token?: string; login?: string };
+      if (!body.token) return Response.json({ error: "Missing token" }, { status: 401 });
+      const session = sessionStore.getSession(body.token);
+      if (!session) return Response.json({ error: "Invalid token" }, { status: 401 });
+
+      const newLogin = body.login?.trim();
+      if (!newLogin || newLogin.length > 50) {
+        return Response.json({ error: "Login must be 1-50 characters" }, { status: 400 });
+      }
+
+      try {
+        await gameRepository.updateUserLogin(session.userId, newLogin);
+        sessionStore.updateLogin(body.token, newLogin);
+        return Response.json({ ok: true, login: newLogin });
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "Update failed";
+        return Response.json({ error: message }, { status: 409 });
+      }
+    }
+
     // --- WebSocket upgrade ---
 
     if (url.pathname === "/ws") {

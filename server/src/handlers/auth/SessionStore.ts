@@ -44,6 +44,14 @@ export class SessionStore {
       this.sessions.delete(token);
     }
   }
+
+  updateLogin(token: string, newLogin: string): void {
+    const session = this.sessions.get(token);
+    if (!session) return;
+    this.loginToToken.delete(session.login);
+    session.login = newLogin;
+    this.loginToToken.set(newLogin, token);
+  }
 }
 
 export type { Session };
