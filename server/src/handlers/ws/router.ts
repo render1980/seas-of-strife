@@ -45,7 +45,27 @@ export async function routeMessage(
       }
 
       case "join_game": {
-        gameManager.joinGame(msg.gameId, playerId, login, ws);
+        console.log(
+          "Handling join_game message:",
+          msg,
+          "playerId:",
+          playerId,
+          "login:",
+          login,
+          "ws:",
+          ws,
+          "gameId:",
+          msg.gameId,
+        );
+        const joinResult = gameManager.joinGame(
+          msg.gameId,
+          playerId,
+          login,
+          ws,
+        );
+        if (!joinResult.success) {
+          send(ws, { type: "join_failed", message: joinResult.error });
+        }
         break;
       }
 
@@ -213,6 +233,16 @@ export async function routeMessage(
         send(ws, { type: "error", message: "Unknown message type" });
     }
   } catch (err: any) {
+    console.error(
+      "Error handling message:",
+      err,
+      "ws:",
+      ws,
+      "playerId:",
+      playerId,
+      "login:",
+      login,
+    );
     send(ws, { type: "error", message: err?.message ?? "Internal error" });
   }
 }

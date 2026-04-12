@@ -53,10 +53,16 @@ export type ClientMessage =
 // Server → Client
 // ---------------------------------------------------------------------------
 
+
 export interface ErrorMsg {
   type: "error";
   message: string;
   state?: SanitizedGameState;
+}
+
+export interface JoinFailedMsg {
+  type: "join_failed";
+  message: string;
 }
 
 export interface GameCreatedMsg {
@@ -138,6 +144,7 @@ export interface PlayerReconnectedMsg {
 }
 
 export type ServerMessage =
+  | JoinFailedMsg  
   | ErrorMsg
   | GameCreatedMsg
   | LobbyUpdateMsg

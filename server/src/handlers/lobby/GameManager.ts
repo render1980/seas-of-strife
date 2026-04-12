@@ -4,7 +4,7 @@ import type {
   ServerMessage,
 } from "../../../../shared/types/messages";
 import type { GameRegistry } from "../../game/GameRegistry";
-import type { GameState, PlayerState } from "../../types/types";
+import type { GameState, JoinResult, PlayerState } from "../../types/types";
 import type { ConnectionManager } from "../ConnectionManager";
 import type { SessionStore } from "../auth/SessionStore";
 import { sanitizeStateForPlayer } from "../sanitize";
@@ -49,6 +49,9 @@ export class GameManager {
     playerName: string,
     ws: ServerWebSocket<WsData>,
   ): Game {
+    console.log(
+      `[GameManager] playerToGame: ${JSON.stringify(this.playerToGame)}`,
+    );
     if (this.playerToGame.has(playerId)) {
       throw new Error("Already in a game");
     }
@@ -63,6 +66,7 @@ export class GameManager {
     };
     this.games.set(gameId, game);
     this.playerToGame.set(playerId, gameId);
+    console.log(`[GameManager] Created game: ${JSON.stringify(game)}`);
     return game;
   }
 
@@ -71,21 +75,34 @@ export class GameManager {
     playerId: string,
     playerName: string,
     ws: ServerWebSocket<WsData>,
-  ): void {
+  ): JoinResult {
     const game = this.games.get(gameId);
-    if (!game) throw new Error("Game not found");
-    if (game.started) throw new Error("Game already started");
-    if (game.players.size >= 6) throw new Error("Game is full");
-    if (this.playerToGame.has(playerId)) throw new Error("Already in a game");
+    if (!game) return { success: false, error: "Game not found" };
+    if (game.started) return { success: false, error: "Game already started" };
+    if (game.players.size >= 6)
+      return { success: false, error: "Game is full" };
+    if (this.playerToGame.has(playerId))
+      return { success: false, error: "Already in a game" };
 
     game.players.set(playerId, ws);
     game.playerNames.set(playerId, playerName);
     this.playerToGame.set(playerId, gameId);
     this.broadcastLobbyUpdate(game);
+    return { success: true };
   }
 
   leaveGame(playerId: string): void {
     const gameId = this.playerToGame.get(playerId);
+    console.log(
+      "[GameManager] leaveGame called for playerId:",
+      playerId,
+      "gameId:",
+      gameId,
+      "games:",
+      JSON.stringify([...this.games.entries()]),
+      "playerToGame:",
+      JSON.stringify([...this.playerToGame.entries()]),
+    );
     if (gameId === undefined) return;
 
     const game = this.games.get(gameId);
@@ -266,6 +283,9 @@ export class GameManager {
 
   private deleteGame(gameId: number): void {
     const game = this.games.get(gameId);
+    console.log(
+      `[GameManager] Deleting gameId: ${gameId}; game: ${JSON.stringify(game)}; games before delete: ${JSON.stringify([...this.games.entries()])}; playerToGame before delete: ${JSON.stringify([...this.playerToGame.entries()])}`,
+    );
     if (!game) return;
 
     for (const pid of game.players.keys()) {

@@ -17,7 +17,13 @@ import ProfileScreen from "./components/screens/ProfileScreen";
 import ResultsScreen from "./components/screens/ResultsScreen";
 import "./index.css";
 
-type Screen = "main" | "new-game-lobby" | "game" | "profile" | "personal-info" | "results";
+type Screen =
+  | "main"
+  | "new-game-lobby"
+  | "game"
+  | "profile"
+  | "personal-info"
+  | "results";
 
 interface LobbyState {
   gameId: number;
@@ -43,9 +49,7 @@ export default function App() {
   const [lobbyState, setLobbyState] = useState<LobbyState | null>(null);
   const [gameState, setGameState] = useState<SanitizedGameState | null>(null);
   const [winners, setWinners] = useState<RoundWinner[] | null>(null);
-  const [roundScores, setRoundScores] = useState<RoundScores | null>(
-    null,
-  );
+  const [roundScores, setRoundScores] = useState<RoundScores | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
 
@@ -59,7 +63,6 @@ export default function App() {
   const goToMain = useCallback(() => {
     closeWs();
     setLobbyState(null);
-    // setGameState(null);
     setWinners(null);
     setRoundScores(null);
     setScreen("main");
@@ -68,6 +71,11 @@ export default function App() {
   const handleMessage = useCallback(
     (msg: ServerMessage) => {
       switch (msg.type) {
+        case "join_failed":
+          console.error("Join failed:", msg.message);
+          setErrorMessage(msg.message);
+          goToMain();
+          break;
         case "lobby_update":
           setLobbyState({
             gameId: msg.gameId,
@@ -137,6 +145,14 @@ export default function App() {
     setScreen("new-game-lobby");
     const ws = connectWebSocket(session.token, handleMessage, goToMain);
     wsRef.current = ws;
+    console.log(
+      "Joining gameId:",
+      gameId,
+      "with token:",
+      session.token,
+      "ws:",
+      ws,
+    );
     ws.addEventListener("open", () => {
       sendWsMessage(ws, { type: "join_game", gameId });
     });
@@ -264,6 +280,8 @@ export default function App() {
     <MainScreen
       session={session}
       state={gameState}
+      error={errorMessage}
+      onDismissError={() => setErrorMessage(null)}
       onNewGame={handleNewGame}
       onContinueGame={handleContinueGame}
       onJoinGame={handleJoinGame}

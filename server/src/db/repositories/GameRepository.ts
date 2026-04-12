@@ -279,7 +279,14 @@ export class GameRepository {
     totalGamesPlayed: number;
   } | null> {
     const rows = await this.sql<
-      [{ gold_medals: number; silver_medals: number; bronze_medals: number; total_games_played: number }]
+      [
+        {
+          gold_medals: number;
+          silver_medals: number;
+          bronze_medals: number;
+          total_games_played: number;
+        },
+      ]
     >`
       SELECT gold_medals, silver_medals, bronze_medals, total_games_played
       FROM player_profiles WHERE user_id = ${userId}
@@ -332,7 +339,10 @@ export class GameRepository {
     `;
 
     // Group by game
-    const gameMap = new Map<number, Array<{ login: string; totalTricks: number }>>();
+    const gameMap = new Map<
+      number,
+      Array<{ login: string; totalTricks: number }>
+    >();
     for (const p of participants) {
       let arr = gameMap.get(p.game_id);
       if (!arr) {

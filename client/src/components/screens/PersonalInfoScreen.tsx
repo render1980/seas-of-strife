@@ -8,7 +8,12 @@ interface Props {
   onBack: () => void;
 }
 
-export default function PersonalInfoScreen({ token, currentLogin, onLoginUpdated, onBack }: Props) {
+export default function PersonalInfoScreen({
+  token,
+  currentLogin,
+  onLoginUpdated,
+  onBack,
+}: Props) {
   const [login, setLogin] = useState(currentLogin);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -53,7 +58,10 @@ export default function PersonalInfoScreen({ token, currentLogin, onLoginUpdated
         Personal Info
       </h2>
 
-      <form onSubmit={handleSubmit} className="flex flex-col items-center gap-4 w-72">
+      <form
+        onSubmit={handleSubmit}
+        className="flex flex-col items-center gap-4 w-72"
+      >
         <label className="text-slate-400 text-sm self-start">Login</label>
         <input
           type="text"
@@ -71,11 +79,7 @@ export default function PersonalInfoScreen({ token, currentLogin, onLoginUpdated
         {error && <p className="text-red-400 text-sm">{error}</p>}
         {success && <p className="text-green-400 text-sm">Login updated!</p>}
 
-        <button
-          type="submit"
-          disabled={saving}
-          className="menu-item mt-2"
-        >
+        <button type="submit" disabled={saving} className="menu-item mt-2">
           {saving ? "Saving…" : "Save"}
         </button>
       </form>

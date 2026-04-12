@@ -2,9 +2,11 @@ import { FormEvent, useState } from "react";
 import { SanitizedGameState } from "../../../../shared/types/messages";
 import { Session } from "../../api/auth";
 
-interface Props {
+interface MainScreenProps {
   session: Session;
   state: SanitizedGameState | null;
+  error: string | null;
+  onDismissError: () => void;
   onNewGame: () => void;
   onContinueGame: () => void;
   onJoinGame: (gameId: number) => void;
@@ -15,12 +17,14 @@ interface Props {
 export default function MainScreen({
   session: _session,
   state,
+  error,
+  onDismissError,
   onNewGame,
   onContinueGame,
   onJoinGame,
   onProfile,
   onLogout,
-}: Props) {
+}: MainScreenProps) {
   const [showJoin, setShowJoin] = useState(false);
   const [joinInput, setJoinInput] = useState("");
   const [joinError, setJoinError] = useState("");
@@ -76,6 +80,8 @@ export default function MainScreen({
         </button>
       </nav>
 
+      {error && errorModal(error, onDismissError)}
+
       {/* Join Game modal */}
       {showJoin &&
         joinGameModal(
@@ -86,6 +92,39 @@ export default function MainScreen({
           joinError,
           setShowJoin,
         )}
+    </div>
+  );
+}
+
+function errorModal(message: string, onDismissError?: () => void) {
+  console.log("Rendering error modal with message:", message);
+  return (
+    <div
+      className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 px-4"
+      onClick={onDismissError}
+    >
+      <div
+        className="bg-slate-800 rounded-2xl p-6 w-full max-w-xs shadow-2xl border border-slate-700"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2
+          className="text-white font-bold text-xl text-center mb-1"
+          style={{ fontFamily: "'Black Ops One', cursive" }}
+        >
+          Error
+        </h2>
+        <p className="text-red-400 text-sm text-center">{message}</p>
+        {onDismissError && (
+          <button
+            onClick={onDismissError}
+            className="mt-4 w-full rounded-lg bg-red-700 hover:bg-red-600 active:bg-red-800
+                             text-white font-bold py-3 text-sm tracking-widest uppercase transition"
+            style={{ fontFamily: "'Black Ops One', cursive" }}
+          >
+            Close
+          </button>
+        )}
+      </div>
     </div>
   );
 }

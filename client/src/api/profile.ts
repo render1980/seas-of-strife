@@ -23,7 +23,9 @@ export async function fetchProfile(token: string): Promise<ProfileData> {
 }
 
 export async function fetchResults(token: string): Promise<GameResult[]> {
-  const res = await fetch(`/api/profile/results?token=${encodeURIComponent(token)}`);
+  const res = await fetch(
+    `/api/profile/results?token=${encodeURIComponent(token)}`,
+  );
   if (!res.ok) throw new Error("Failed to fetch results");
   const data = await res.json();
   return data.games;

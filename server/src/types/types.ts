@@ -34,6 +34,11 @@ export interface TrickState {
   winnerHasSpecialPower?: boolean;
 }
 
+export interface JoinResult {
+  success: boolean;
+  error?: string;
+}
+
 export interface RoundResult {
   round: number;
   scores: { playerId: string; tricksTaken: number }[];

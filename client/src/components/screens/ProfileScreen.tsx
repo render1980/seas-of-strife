@@ -8,7 +8,12 @@ interface Props {
   onBack: () => void;
 }
 
-export default function ProfileScreen({ token, onPersonalInfo, onResults, onBack }: Props) {
+export default function ProfileScreen({
+  token,
+  onPersonalInfo,
+  onResults,
+  onBack,
+}: Props) {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
 
