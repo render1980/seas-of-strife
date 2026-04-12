@@ -89,13 +89,12 @@ export class GameRepository {
   }
 
   /**
-   * Save the final game results (only real players).
-   * Also updates player profiles with medals.
+   * Save the final game results for ALL real players (sorted by performance).
+   * The first 3 entries receive gold/silver/bronze medals; the rest receive none.
    */
   async saveGameResults(
     gameId: number,
-    realPlayerIds: string[],
-    winners: Array<{
+    allRealPlayers: Array<{
       playerId: string;
       name: string;
       totalTricksTaken: number;
@@ -114,83 +113,50 @@ export class GameRepository {
 
     const internalGameId = gameRecord[0].id;
 
+    const realPlayerIds = allRealPlayers.map((p) => p.playerId);
+    const winners = allRealPlayers.slice(0, 3);
+
     // Save game results
     await sql`
       INSERT INTO game_results (game_id, real_player_ids, winners)
       VALUES (${internalGameId}, ${JSON.stringify(realPlayerIds)}, ${JSON.stringify(winners)})
     `;
 
-    // Update player profiles with medals
-    const medals = ["gold", "silver", "bronze"];
-    for (let i = 0; i < winners.length; i++) {
-      const winner = winners[i];
-      if (!winner) {
-        continue;
-      }
-      const medal = medals[i] || null;
+    const medals = ["gold", "silver", "bronze"] as const;
+
+    for (let i = 0; i < allRealPlayers.length; i++) {
+      const player = allRealPlayers[i]!;
+      const medal = medals[i] ?? null;
+
+      const userRecord = await sql<[{ id: number }]>`
+        SELECT id FROM users WHERE login = ${player.playerId}
+      `;
+      if (!userRecord.length) continue;
+
+      const userId = userRecord[0].id;
 
       if (medal) {
-        // Get user ID from login
-        const userRecord = await sql<[{ id: number }]>`
-          SELECT id FROM users WHERE login = ${winner.playerId}
+        const medalColumn = `${medal}_medals`;
+        await sql`
+          UPDATE player_profiles
+          SET
+            ${sql(medalColumn)} = ${sql(medalColumn)} + 1,
+            total_games_played = total_games_played + 1,
+            updated_at = CURRENT_TIMESTAMP
+          WHERE user_id = ${userId}
         `;
-
-        if (userRecord.length > 0) {
-          const userId = userRecord[0].id;
-          const medalColumn = `${medal}_medals`;
-
-          // Update medal count and game count
-          await sql`
-            UPDATE player_profiles
-            SET 
-              ${sql(medalColumn)} = ${sql(medalColumn)} + 1,
-              total_games_played = total_games_played + 1,
-              updated_at = CURRENT_TIMESTAMP
-            WHERE user_id = ${userId}
-          `;
-
-          // Insert into player_game_results
-          await sql`
-            INSERT INTO player_game_results (user_id, game_id, medal, total_tricks_taken)
-            VALUES (${userId}, ${gameId}, ${medal}, ${winner.totalTricksTaken})
-          `;
-        }
-      }
-    }
-
-    // Update game count for non-medal players
-    for (const realPlayerId of realPlayerIds) {
-      const isWinner = winners.some((w) => w.playerId === realPlayerId);
-      if (!isWinner) {
-        const userRecord = await sql<[{ id: number }]>`
-          SELECT id FROM users WHERE login = ${realPlayerId}
+      } else {
+        await sql`
+          UPDATE player_profiles
+          SET total_games_played = total_games_played + 1
+          WHERE user_id = ${userId}
         `;
-
-        if (userRecord.length > 0) {
-          const userId = userRecord[0].id;
-          await sql`
-            UPDATE player_profiles
-            SET total_games_played = total_games_played + 1
-            WHERE user_id = ${userId}
-          `;
-
-          // Find their trick count from roundResults
-          const gameState = await this.loadGameState(gameId);
-          if (gameState) {
-            const totalTricks = gameState.roundResults.reduce((sum, round) => {
-              const score = round.scores.find(
-                (s) => s.playerId === realPlayerId,
-              );
-              return sum + (score?.tricksTaken ?? 0);
-            }, 0);
-
-            await sql`
-              INSERT INTO player_game_results (user_id, game_id, medal, total_tricks_taken)
-              VALUES (${userId}, ${gameId}, NULL, ${totalTricks})
-            `;
-          }
-        }
       }
+
+      await sql`
+        INSERT INTO player_game_results (user_id, game_id, medal, total_tricks_taken)
+        VALUES (${userId}, ${gameId}, ${medal}, ${player.totalTricksTaken})
+      `;
     }
   }
 

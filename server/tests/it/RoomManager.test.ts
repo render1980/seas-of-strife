@@ -98,23 +98,23 @@ describe("GameManager -> GameRegistry -> Postgres", () => {
       expect(playerIds).toContain("bob");
     });
 
-    it("throws when joining a non-existent game", () => {
+    it("returns error when joining a non-existent game", () => {
       const { gm } = makeEnv();
       const { ws } = mockWs("bob");
-      expect(() => gm.joinGame(9999, "bob", "Bob", ws)).toThrow(
-        "Game not found",
-      );
+      const result = gm.joinGame(9999, "bob", "Bob", ws);
+      expect(result.success).toBe(false);
+      expect(result.error).toMatch(/game not found/i);
     });
 
-    it("throws when player is already in a game", () => {
+    it("returns error when player is already in a game", () => {
       const { gm } = makeEnv();
       const alice = mockWs("alice");
       const alice2 = mockWs("alice");
 
       const game = gm.createGame("alice", "Alice", alice.ws);
-      expect(() =>
-        gm.joinGame(game.gameId, "alice", "Alice", alice2.ws),
-      ).toThrow("Already in a game");
+      const result = gm.joinGame(game.gameId, "alice", "Alice", alice2.ws);
+      expect(result.success).toBe(false);
+      expect(result.error).toMatch(/already in a game/i);
     });
   });
 
@@ -303,9 +303,9 @@ describe("GameManager -> GameRegistry -> Postgres", () => {
       const game = gm.createGame("alice", "Alice", alice.ws);
       await gm.startGame("alice");
 
-      expect(() => gm.joinGame(game.gameId, "late", "Late", late.ws)).toThrow(
-        "Game already started",
-      );
+      const result = gm.joinGame(game.gameId, "late", "Late", late.ws);
+      expect(result.success).toBe(false);
+      expect(result.error).toMatch(/game already started/i);
     });
   });
 

@@ -31,8 +31,7 @@ export interface IPersistService {
   ): Promise<void>;
   saveGameResults(
     gameId: number,
-    realPlayerIds: string[],
-    winners: any[],
+    allRealPlayers: Array<{ playerId: string; name: string; totalTricksTaken: number }>,
   ): Promise<void>;
 }
 
@@ -329,18 +328,15 @@ export class GameEngine {
 
       // Save game results
       if (this.persistService) {
-        const realPlayerIds = newState.players
-          .filter((p) => !p.isBot)
-          .map((p) => p.id);
-        const winners = calculateRoundWinners(
-          newState.players,
+        const allRealPlayers = calculateRoundWinners(
+          newState.players.filter((p) => !p.isBot),
           newState.roundResults,
+          newState.players.length,
         );
         try {
           await this.persistService.saveGameResults(
             newState.gameId,
-            realPlayerIds,
-            winners,
+            allRealPlayers,
           );
         } catch (error) {
           console.error("Failed to save game results:", error);

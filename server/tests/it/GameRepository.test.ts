@@ -155,15 +155,11 @@ describe("GameRepository -> Postgres", () => {
     it("awards gold/silver/bronze medals to the top-3 winners", async () => {
       await setupUsersAndGame();
 
-      await repo.saveGameResults(
-        1,
-        ["player_1", "player_2", "player_3"],
-        [
-          { playerId: "player_1", name: "Player 1", totalTricksTaken: 10 },
-          { playerId: "player_2", name: "Player 2", totalTricksTaken: 8 },
-          { playerId: "player_3", name: "Player 3", totalTricksTaken: 6 },
-        ],
-      );
+      await repo.saveGameResults(1, [
+        { playerId: "player_1", name: "Player 1", totalTricksTaken: 10 },
+        { playerId: "player_2", name: "Player 2", totalTricksTaken: 8 },
+        { playerId: "player_3", name: "Player 3", totalTricksTaken: 6 },
+      ]);
 
       const profiles = await sql<
         Array<{
@@ -192,18 +188,15 @@ describe("GameRepository -> Postgres", () => {
     });
 
     it("increments total_games_played for non-medal real players", async () => {
-      const userIds = await setupUsersAndGame(true);
+      const userIds = await setupUsersAndGame();
       const player4Id = userIds[3]!;
 
-      await repo.saveGameResults(
-        1,
-        ["player_1", "player_2", "player_3", "player_4"],
-        [
-          { playerId: "player_1", name: "Player 1", totalTricksTaken: 5 },
-          { playerId: "player_2", name: "Player 2", totalTricksTaken: 4 },
-          { playerId: "player_3", name: "Player 3", totalTricksTaken: 3 },
-        ],
-      );
+      await repo.saveGameResults(1, [
+        { playerId: "player_1", name: "Player 1", totalTricksTaken: 5 },
+        { playerId: "player_2", name: "Player 2", totalTricksTaken: 4 },
+        { playerId: "player_3", name: "Player 3", totalTricksTaken: 3 },
+        { playerId: "player_4", name: "Player 4", totalTricksTaken: 2 },
+      ]);
 
       const profile = await sql<Array<{ total_games_played: number }>>`
         SELECT total_games_played FROM player_profiles WHERE user_id = ${player4Id}
@@ -221,9 +214,9 @@ describe("GameRepository -> Postgres", () => {
     });
 
     it("throws when the game does not exist", async () => {
-      await expect(repo.saveGameResults(999, ["player_1"], [])).rejects.toThrow(
-        "Game 999 not found",
-      );
+      await expect(
+        repo.saveGameResults(999, [{ playerId: "player_1", name: "P1", totalTricksTaken: 0 }]),
+      ).rejects.toThrow("Game 999 not found");
     });
   });
 
